@@ -88,7 +88,12 @@ Unit main() {
 		resolve Unit();
 	}
 	console!check(refused);
-	runtime!setThreads(Int(2)) ?? Unit();
+	accepted Bool = Bool(true);
+	runtime!setThreads(Int(2)) ? e {
+		accepted = Bool(false);
+		resolve Unit();
+	}
+	console!check(accepted);
 	runtime!setThreadsAuto();
 
 	// Control flow.
