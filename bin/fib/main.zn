@@ -7,7 +7,7 @@ Int fib(n Int) {
     if(n < 2) {
         return n;
     }
-    return fib(n - 1) + fib(n - 2);
+    return fib(n - Int(1)) + fib(n - Int(2));
 }
 
 Unit main() {
