@@ -2,9 +2,117 @@ package test;
 
 import core$;
 
+Unit check(this Console, ok Bool) mut {
+	ran Bool = if(ok) {
+		this!print("yes");
+	}
+	ran:else() {
+		this!print("no");
+	}
+	return Unit();
+}
+
+Int firstAbove(values List<Int>, limit Int) {
+	i Int = Int(1);
+	i!to(values:size()) {
+		if(limit < values[i]) {
+			return i;
+		}
+	}
+	return Int(0);
+}
+
+Unit printUnlessStopped(this Console, stop Bool) mut {
+	do() {
+		guard(stop);
+		this!print("yes");
+	}
+	return Unit();
+}
+
 Unit main() {
-	res Float = Float(3.0) * 3.0;
 	console Console(@program$console);
-	console!print(String(res));
+
+	// Int, Float and their operators.
+	res Float = Float(3.0) * 3.0;
+	console!check(res == 9.0);
+	console!check(Int(7) - Int(2) == 5);
+	console!check(Int(2) < 3 '* Int(3) > 2);
+	console!check(Int(3) <= 3 '* Int(4) >= 3 '* Int(4) ~= 3);
+	console!check(Int(7) / 2 == 3);
+	console!check(Float(Int(7)) / Float(Int(2)) == 3.5);
+	console!check(Float(Int(2)) == 2.0);
+	console!check(Int.truncate(Float(2.75)) == 2);
+	console!check(~Float(1.5) < 0.0);
+
+	// Bool algebra.
+	yes Bool = Bool(true);
+	no Bool = Bool(false);
+	console!check(yes * ~no);
+	console!check(no + yes);
+	console!check(~(yes == no));
+	console!check(yes ~= no);
+
+	// String.
+	greeting String = String("hello");
+	console!check(greeting + " world" == "hello world");
+	console!check(String(Int(42)) == "42");
+	console!check(String(Float(2.5)) == "2.5");
+
+	// Control flow.
+	chain Bool = if(Int(1) == 2) {
+		console!print("no");
+	}
+	chain!elif(Int(1) == 1) {
+		console!print("yes");
+	}
+	chain!elif(true) {
+		console!print("no");
+	}
+	chain:else() {
+		console!print("no");
+	}
+	reached Bool = Bool(false);
+	do() {
+		reached = Bool(true);
+	}
+	console!check(reached);
+	count Int = Int(0);
+	i Int = Int(1);
+	i!to(Int(10)) {
+		count = count + i;
+	}
+	console!check(count == 55);
+	console!printUnlessStopped(Bool(false));
+	console!printUnlessStopped(Bool(true));
+
+	// Array.
+	numbers Array<Int, 4> = Array([Int(1), Int(2), ~Int(5), Int(4)]);
+	console!check(numbers:size() == 4);
+	console!check(numbers[Int(2)] == 2);
+	numbers[Int(2)] = Int(20);
+	console!check(numbers[Int(2)] == 20);
+
+	// ArrayRef.
+	refs ArrayRef<Int, 3> = ArrayRef([Int(4), Int(5), Int(6)]);
+	console!check(refs:size() == 3);
+	refs[Int(3)] = Int(60);
+	console!check(refs[Int(1)] + refs[Int(3)] == 64);
+
+	// List.
+	list List<Int> = List(Int);
+	console!check(list:size() == 0);
+	j Int = Int(1);
+	j!to(Int(5)) {
+		list!push(j * j);
+	}
+	console!check(list:size() == 5);
+	console!check(list[Int(5)] == 25);
+	list[Int(5)] = Int(0);
+	console!check(firstAbove(list, Int(5)) == 3);
+	words List<String> = List(String);
+	words!push("a");
+	words!push("b");
+	console!check(words[Int(1)] + words[Int(2)] == "ab");
 	return Unit();
 }
