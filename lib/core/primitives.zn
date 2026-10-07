@@ -1,5 +1,6 @@
 package core;
 
+// Unit
 type Unit = struct {
 	_value @primitives$Unit;
 }
@@ -7,12 +8,21 @@ Unit() => init{
 	_value = @primitives$Unit();
 }
 
+
+// Bool
 type Bool = struct {
 	_value @primitives$Bool;
 }
 implicit Bool(v @primitives$Bool) => init{
 	_value = v;
 }
+implicit @primitives$Bool(v Bool) => v._value
+
+Bool ~(v Bool) => Bool(@operators$not(v._value))
+Bool *(left Bool, right Bool) => Bool(@operators$and(left._value, right._value))
+Bool +(left Bool, right Bool) => Bool(@operators$or(left._value, right._value))
+Bool ==(left Bool, right Bool) => Bool(@operators$equal(left._value, right._value))
+
 
 // Int
 type Int = struct {
@@ -22,6 +32,8 @@ Int(v @primitives$I64) => init{
 	_value = v;
 }
 implicit Int(v @concepts$Int) => Int(@primitives$I64(v))
+implicit @primitives$I64(v Int) => v._value
+Int.truncate(v Float) => Int(@primitives$I64.truncate(v._value))
 
 Int ~(v Int) => Int(@operators$negate(v._value))
 Int +(left Int, right Int) => Int(@operators$add(left._value, right._value))
@@ -39,7 +51,9 @@ Float(v @primitives$F64) => init{
 	_value = v;
 }
 Float(v @primitives$I64) => Float(@primitives$F64.round(v))
+Float(v Int) => Float(v._value)
 implicit Float(v @concepts$Float) => Float(@primitives$F64(v))
+implicit @primitives$F64(v Float) => v._value
 
 Float ~(v Float) => Float(@operators$negate(v._value))
 Float +(left Float, right Float) => Float(@operators$add(left._value, right._value))
@@ -58,5 +72,8 @@ String(v @primitives$String) => init {
 }
 String(v Int) => String(@primitives$String(v._value))
 String(v Float) => String(@primitives$String(v._value))
-String +(left String, right String) => String(@operators$concat(left._value, right._value))
 implicit String(v @concepts$String) => String(@primitives$String(v))
+implicit @primitives$String(v String) => v._value
+
+String +(left String, right String) => String(@operators$concat(left._value, right._value))
+Bool ==(left String, right String) => Bool(@operators$equal(left._value, right._value))

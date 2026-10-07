@@ -1,0 +1,40 @@
+package core;
+
+// Array
+type Array<T Type, n @concepts$Int> = struct {
+	_value @primitives$Array<T, n>;
+}
+Array<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
+	_value = @primitives$Array(values);
+}
+
+Int size(this Array<T Type, n @concepts$Int>) => Int(n)
+(this Array<T Type, n @concepts$Int>)[index Int] => this._value[index._value]
+
+
+// ArrayRef
+type ArrayRef<T Type, n @concepts$Int> = #struct {
+	_value @primitives$ArrayRef<T, n>;
+}
+ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
+	_value = @primitives$ArrayRef(values);
+}
+
+Int size(this ArrayRef<T Type, n @concepts$Int>) => Int(n)
+(this ArrayRef<T Type, n @concepts$Int>)[index Int] => this._value[index._value]
+
+
+// List
+type List<T Type> = #struct {
+	_value @primitives$List<T>;
+}
+List<T>(T Type) => init{
+	_value = @primitives$List(T);
+}
+
+Int size(this List<T Type>) => Int(this._value:size())
+Unit push(this List<T Type>, value ^T) mut {
+	this._value!push(value);
+	return Unit();
+}
+(this List<T Type>)[index Int] => this._value[index._value]
