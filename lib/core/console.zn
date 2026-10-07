@@ -9,6 +9,6 @@ Console(console &@runtime$Console) => init{
 }
 
 Unit print(this Console, text String) mut {
-	this._console!print(text._value);
+	this._console!print(text._value + "\n");
 	return Unit();
 }
