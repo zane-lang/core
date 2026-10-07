@@ -77,3 +77,22 @@ implicit @primitives$String(v String) => v._value
 
 String +(left String, right String) => String(@operators$concat(left._value, right._value))
 Bool ==(left String, right String) => Bool(@operators$equal(left._value, right._value))
+
+/// The integer the text spells: a literal's digits with an optional `-`.
+/// Aborts when the text spells none, or one too large for an `Int`.
+Int?Unit parseInt(this String) {
+	value @primitives$I64 = this._value:parseI64() ? e {
+		abort Unit();
+	}
+	return Int(value);
+}
+
+/// The number the text spells: an integer or a float literal with an
+/// optional `-`. Aborts when the text spells none, or one too large for a
+/// `Float`.
+Float?Unit parseFloat(this String) {
+	value @primitives$F64 = this._value:parseF64() ? e {
+		abort Unit();
+	}
+	return Float(value);
+}

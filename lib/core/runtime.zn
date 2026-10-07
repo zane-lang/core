@@ -1,0 +1,35 @@
+package core;
+
+type Runtime = #struct {
+	_runtime &@runtime$Runtime;
+}
+
+Runtime(runtime &@runtime$Runtime) => init{
+	_runtime = runtime;
+}
+
+/// The arguments the program was started with, without its own name.
+^List<String> arguments(this Runtime) {
+	raw ^@primitives$List<@primitives$String> = this._runtime:arguments();
+	args ^List<String> = List(String);
+	i Int = Int(1);
+	i!to(Int(raw:size())) {
+		args!push(String(raw[i._value]));
+	}
+	return args;
+}
+
+/// Sizes the thread pool to `count` threads, and aborts, leaving it as it
+/// was, when `count` is below one.
+Unit?Unit setThreads(this Runtime, count Int) mut {
+	this._runtime!setThreads(count._value) ? e {
+		abort Unit();
+	}
+	return Unit();
+}
+
+/// Sizes the thread pool to the hardware's concurrency.
+Unit setThreadsAuto(this Runtime) mut {
+	this._runtime!setThreadsAuto();
+	return Unit();
+}

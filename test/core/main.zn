@@ -59,6 +59,43 @@ Unit main() {
 	console!check(String(Int(42)) == "42");
 	console!check(String(Float(2.5)) == "2.5");
 
+	// Numbers read from text.
+	console!check((String("42"):parseInt() ?? Int(0)) == 42);
+	console!check((String("-7"):parseInt() ?? Int(0)) == ~Int(7));
+	console!check((String("4x"):parseInt() ?? Int(1)) == 1);
+	console!check((String("2.5"):parseInt() ?? Int(1)) == 1);
+	console!check((String("99999999999999999999"):parseInt() ?? Int(1)) == 1);
+	console!check((String("2.5"):parseFloat() ?? Float(0.0)) == 2.5);
+	console!check((String("-3"):parseFloat() ?? Float(0.0)) == ~Float(3.0));
+	console!check((String(" 1"):parseFloat() ?? Float(1.5)) == 1.5);
+
+	// The program's arguments, as `String`s.
+	runtime Runtime(@program$runtime);
+	args List<String> = runtime:arguments();
+	raw @primitives$List<@primitives$String> = @program$runtime:arguments();
+	console!check(args:size() == Int(raw:size()));
+	same Bool = Bool(true);
+	k Int = Int(1);
+	k!to(args:size()) {
+		same = same * (args[k] == String(raw[k]));
+	}
+	console!check(same);
+
+	// The thread pool, sized through the runtime.
+	refused Bool = Bool(false);
+	runtime!setThreads(Int(0)) ? e {
+		refused = Bool(true);
+		resolve Unit();
+	}
+	console!check(refused);
+	accepted Bool = Bool(true);
+	runtime!setThreads(Int(2)) ? e {
+		accepted = Bool(false);
+		resolve Unit();
+	}
+	console!check(accepted);
+	runtime!setThreadsAuto();
+
 	// Control flow.
 	chain Bool = if(Int(1) == 2) {
 		console!print("no");
