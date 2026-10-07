@@ -38,6 +38,7 @@ type Float = struct {
 Float(v @primitives$F64) => init{
 	_value = v;
 }
+Float(v @primitives$I64) => Float(@primitives$F64.round(v))
 implicit Float(v @concepts$Float) => Float(@primitives$F64(v))
 
 Float ~(v Float) => Float(@operators$negate(v._value))
