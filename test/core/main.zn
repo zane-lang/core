@@ -39,7 +39,8 @@ Unit main() {
 	console!check(Int(7) - Int(2) == 5);
 	console!check(Int(2) < 3 '* Int(3) > 2);
 	console!check(Int(3) <= 3 '* Int(4) >= 3 '* Int(4) ~= 3);
-	console!check(Int(7) / 2 == 3.0);
+	console!check(Int(7) / 2 == 3);
+	console!check(Float(Int(7)) / Float(Int(2)) == 3.5);
 	console!check(Float(Int(2)) == 2.0);
 	console!check(Int.truncate(Float(2.75)) == 2);
 	console!check(~Float(1.5) < 0.0);

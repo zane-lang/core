@@ -38,7 +38,7 @@ Int.truncate(v Float) => Int(@primitives$I64.truncate(v._value))
 Int ~(v Int) => Int(@operators$negate(v._value))
 Int +(left Int, right Int) => Int(@operators$add(left._value, right._value))
 Int *(left Int, right Int) => Int(@operators$multiply(left._value, right._value))
-Float /(left Int, right Int) => Float(@operators$divide(left._value, right._value))
+Int /(left Int, right Int) => Int(@operators$divide(left._value, right._value))
 Bool ==(left Int, right Int) => Bool(@operators$equal(left._value, right._value))
 Bool <(left Int, right Int) => Bool(@operators$lessThan(left._value, right._value))
 
