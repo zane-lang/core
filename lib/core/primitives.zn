@@ -1,0 +1,45 @@
+package core;
+
+type Unit = struct {
+	_value @primitives$Unit;
+}
+Unit() => init{
+	_value = @primitives$Unit();
+}
+
+type Bool = struct {
+	_value @primitives$Bool;
+}
+implicit Bool(v @primitives$Bool) => init{
+	_value = v;
+}
+
+type Int = struct {
+	_value @primitives$I64;
+}
+Int(v @primitives$I64) => init{
+	_value = v;
+}
+implicit Int(v @concepts$Int) => Int(@primitives$I64(v))
+
+type Float = struct {
+	_value @primitives$F64;
+}
+Float(v @primitives$F64) => init{
+	_value = v;
+}
+implicit Float(v @concepts$Float) => Float(@primitives$F64(v))
+
+Float ~(v Float) => Float(@operators$negate(v))
+Float +(left Float, right Float) => Float(@operators$add(left._value, right._value))
+Float *(left Float, right Float) => Float(@operators$multiply(left._value, right._value))
+Float /(left Float, right Float) => Float(@operators$divide(left._value, right._value))
+Bool ==(left Float, right Float) => Bool(@operators$equal(left._value, right._value))
+
+type String = struct {
+	_value @primitives$String;
+}
+String(v @primitives$String) => init {
+	_value = v;
+}
+implicit String(v @concepts$String) => String(@primitives$String(v))

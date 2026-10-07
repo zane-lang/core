@@ -1,0 +1,14 @@
+package core;
+
+type Console = #struct {
+	_console &@runtime$Console;
+}
+
+Console(console &@runtime$Console) => init{
+	_console = console;
+}
+
+Unit print(this Console, text String) mut {
+	this._console!print(text._value);
+	return Unit();
+}

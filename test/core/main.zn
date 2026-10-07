@@ -1,0 +1,10 @@
+package test;
+
+import core$;
+
+Unit main() {
+	// res Float = 3 * 3;
+	console Console(@program$console);
+	console!print("hello");
+	return Unit();
+}
