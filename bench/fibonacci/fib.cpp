@@ -8,5 +8,5 @@ constexpr std::int64_t fib(std::int64_t n) {
 }
 
 int main() {
-    std::cout << fib(35) << '\n';
+    std::cout << fib(42) << '\n';
 }

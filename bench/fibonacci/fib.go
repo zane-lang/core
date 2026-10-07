@@ -10,5 +10,5 @@ func fib(n int64) int64 {
 }
 
 func main() {
-    fmt.Println(fib(35))
+    fmt.Println(fib(42))
 }

@@ -12,6 +12,6 @@ Int fib(n Int) {
 
 Unit main() {
     console Console(@program$console);
-    console!print(String(fib(Int(35))));
+    console!print(String(fib(Int(42))));
     return Unit();
 }

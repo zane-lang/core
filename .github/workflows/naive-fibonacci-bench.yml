@@ -19,5 +19,12 @@ jobs:
       - name: Install Zane compiler v0.7
         run: |
           zane toolchain install v0.7
-      - name: Compile and benchmark
+      - name: Compile and benchmark fib(42)
         run: python3 bench/fibonacci/measure.py
+      - name: Upload binaries and disassemblies
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fib42-binaries-disassembly
+          path: out/fib-bench-inspection/
+          if-no-files-found: warn
