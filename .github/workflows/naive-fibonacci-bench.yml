@@ -1,0 +1,23 @@
+name: Naive Fibonacci comparison
+on:
+  push:
+    branches:
+      - bench/naive-fibonacci-20261008
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Zane CLI v0.4
+        run: |
+          curl -fsSL https://github.com/zane-lang/zane/releases/download/v0.4/install.sh | sh -s -- v0.4
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install Zane compiler v0.7
+        run: |
+          zane toolchain install v0.7
+      - name: Compile and benchmark
+        run: python3 bench/fibonacci/measure.py

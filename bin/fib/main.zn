@@ -1,0 +1,17 @@
+package fib;
+
+import core$;
+
+// A literal input deliberately permits compile-time evaluation.
+Int fib(n Int) {
+    if(n < 2) {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+Unit main() {
+    console Console(@program$console);
+    console!print(String(fib(Int(35))));
+    return Unit();
+}
