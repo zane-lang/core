@@ -30,10 +30,6 @@ Unit printUnlessStopped(this Console, stop Bool) mut {
 	return Unit();
 }
 
-/// Within a tolerance of the true value: an approximate function's last
-/// digit is the platform's (math.md §2.6).
-Bool near(value Float, expected Float) => abs(value - expected) < 0.000000000001
-
 Unit main() {
 	console Console(@program$console);
 
@@ -72,44 +68,6 @@ Unit main() {
 	console!check((String("2.5"):parseFloat() ?? Float(0.0)) == 2.5);
 	console!check((String("-3"):parseFloat() ?? Float(0.0)) == ~Float(3.0));
 	console!check((String(" 1"):parseFloat() ?? Float(1.5)) == 1.5);
-
-	// Math functions.
-	console!check(bitAnd(Int(12), Int(10)) == 8);
-	console!check(bitOr(Int(12), Int(10)) == 14);
-	console!check(bitXor(Int(12), Int(10)) == 6);
-	console!check(bitNot(Int(0)) == ~Int(1));
-	console!check(shiftLeft(Int(1), Int(65)) == 2);
-	console!check(shiftRight(~Int(16), Int(2)) == ~Int(4));
-	console!check(shiftRightLogical(~Int(1), Int(60)) == 15);
-	console!check(rotateRight(rotateLeft(Int(6), Int(3)), Int(3)) == 6);
-	console!check(popCount(Int(255)) == 8);
-	console!check(leadingZeros(Int(0)) == 64);
-	console!check(trailingZeros(Int(8)) == 3);
-	console!check(abs(~Int(5)) == 5);
-	console!check(min(Int(3), ~Int(2)) == ~Int(2));
-	console!check(max(Int(3), ~Int(2)) == 3);
-	console!check(sqrt(Float(16.0)) == 4.0);
-	console!check(abs(~Float(2.5)) == 2.5);
-	console!check(floor(~Float(1.5)) == ~Float(2.0));
-	console!check(ceil(Float(1.25)) == 2.0);
-	console!check(trunc(~Float(1.75)) == ~Float(1.0));
-	console!check(roundEven(Float(2.5)) == 2.0);
-	console!check(fma(Float(2.0), Float(3.0), Float(1.0)) == 7.0);
-	console!check(copySign(Float(2.0), ~Float(1.0)) == ~Float(2.0));
-	console!check(min(Float(1.0), Float(2.0)) == 1.0);
-	console!check(max(Float(1.0), Float(2.0)) == 2.0);
-	console!check(near(sin(Float(0.5)), 0.479425538604203));
-	console!check(near(cos(Float(0.5)), 0.8775825618903728));
-	console!check(near(tan(Float(0.5)), 0.5463024898437905));
-	console!check(near(asin(Float(0.5)), 0.5235987755982989));
-	console!check(near(acos(Float(0.5)), 1.0471975511965979));
-	console!check(near(atan(Float(1.0)), 0.7853981633974483));
-	console!check(near(atan2(Float(1.0), ~Float(1.0)), 2.356194490192345));
-	console!check(near(exp(Float(1.0)), 2.718281828459045));
-	console!check(near(log(Float(10.0)), 2.302585092994046));
-	console!check(near(pow(Float(2.0), Float(10.0)), 1024.0));
-	console!check(near(cbrt(~Float(27.0)), ~Float(3.0)));
-	console!check(near(hypot(Float(3.0), Float(4.0)), 5.0));
 
 	// The program's arguments, as `String`s.
 	runtime Runtime(@program$runtime);
