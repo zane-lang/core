@@ -162,7 +162,7 @@ Unit main() {
 	words!push("c");
 	removed String = words!remove(Int(1));
 	console!check(removed + words[Int(1)] + words[Int(2)] == "abc");
-	words!swapRemove(Int(1));
+	console!check(words!swapRemove(Int(1)) == "b");
 	console!check(words:size() == 1);
 	console!check(words[Int(1)] == "c");
 	return Unit();
