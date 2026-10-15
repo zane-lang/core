@@ -37,4 +37,10 @@ Unit push(this List<T Type>, value ^T) mut {
 	this._value!push(value);
 	return Unit();
 }
+/// Moves the element at `index` out and shifts the later ones down, keeping
+/// their order.
+^T remove(this List<T Type>, index Int) mut => this._value!remove(index._value)
+/// Moves the element at `index` out and moves the last one into its place,
+/// which moves one element whatever the index, but does not keep the order.
+^T swapRemove(this List<T Type>, index Int) mut => this._value!swapRemove(index._value)
 (this List<T Type>)[index Int] => this._value[index._value]
