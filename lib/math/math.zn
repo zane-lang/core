@@ -1,0 +1,82 @@
+package math;
+
+import core$;
+
+// The math functions (math.md §3), over core's Int and Float. Each is a
+// function, not a method: it computes a result from its inputs
+// (functions.md §3.6). Each operand reaches its intrinsic through core's
+// implicit conversion to the scalar it holds.
+
+
+// Int
+/// Each bit set where it is set in both operands.
+Int bitAnd(left Int, right Int) => Int(@math$bitAnd(left, right))
+/// Each bit set where it is set in either operand.
+Int bitOr(left Int, right Int) => Int(@math$bitOr(left, right))
+/// Each bit set where it is set in exactly one operand.
+Int bitXor(left Int, right Int) => Int(@math$bitXor(left, right))
+/// Every bit flipped.
+Int bitNot(value Int) => Int(@math$bitNot(value))
+/// The bits moved `count` places up, zeros filling in. The count is taken
+/// modulo 64.
+Int shiftLeft(value Int, count Int) => Int(@math$shiftLeft(value, count))
+/// The bits moved `count` places down, copies of the sign bit filling in.
+/// The count is taken modulo 64.
+Int shiftRight(value Int, count Int) => Int(@math$shiftRight(value, count))
+/// The bits moved `count` places down, zeros filling in. The count is taken
+/// modulo 64.
+Int shiftRightLogical(value Int, count Int) => Int(@math$shiftRightLogical(value, count))
+/// The bits moved `count` places up, those moved out filling in below.
+Int rotateLeft(value Int, count Int) => Int(@math$rotateLeft(value, count))
+/// The bits moved `count` places down, those moved out filling in above.
+Int rotateRight(value Int, count Int) => Int(@math$rotateRight(value, count))
+/// The number of set bits.
+Int popCount(value Int) => Int(@math$popCount(value))
+/// The number of zero bits above the highest set bit; 64 for zero.
+Int leadingZeros(value Int) => Int(@math$leadingZeros(value))
+/// The number of zero bits below the lowest set bit; 64 for zero.
+Int trailingZeros(value Int) => Int(@math$trailingZeros(value))
+/// The magnitude. The most negative `Int` gives itself back.
+Int abs(value Int) => Int(@math$abs(value))
+Int min(left Int, right Int) => Int(@math$min(left, right))
+Int max(left Int, right Int) => Int(@math$max(left, right))
+
+
+// Float: exact
+/// The square root, correctly rounded; a NaN below zero.
+Float sqrt(value Float) => Float(@math$sqrt(value))
+Float abs(value Float) => Float(@math$abs(value))
+Float floor(value Float) => Float(@math$floor(value))
+Float ceil(value Float) => Float(@math$ceil(value))
+/// Rounded toward zero to an integer.
+Float trunc(value Float) => Float(@math$trunc(value))
+/// Rounded to the nearest integer, a tie going to the even one.
+Float roundEven(value Float) => Float(@math$roundEven(value))
+/// `left * right + addend`, rounded once.
+Float fma(left Float, right Float, addend Float) => Float(@math$fma(left, right, addend))
+/// `magnitude` with the sign of `sign`.
+Float copySign(magnitude Float, sign Float) => Float(@math$copySign(magnitude, sign))
+/// The lesser operand, or a NaN when either is a NaN.
+Float min(left Float, right Float) => Float(@math$min(left, right))
+/// The greater operand, or a NaN when either is a NaN.
+Float max(left Float, right Float) => Float(@math$max(left, right))
+
+
+// Float: approximate, the platform's C math library (math.md §2.6)
+Float cbrt(value Float) => Float(@math$cbrt(value))
+/// Of an angle in radians.
+Float sin(value Float) => Float(@math$sin(value))
+Float cos(value Float) => Float(@math$cos(value))
+Float tan(value Float) => Float(@math$tan(value))
+/// In radians.
+Float asin(value Float) => Float(@math$asin(value))
+Float acos(value Float) => Float(@math$acos(value))
+Float atan(value Float) => Float(@math$atan(value))
+/// The angle in radians, from -π to π, of the point (x, y).
+Float atan2(y Float, x Float) => Float(@math$atan2(y, x))
+Float exp(value Float) => Float(@math$exp(value))
+/// The natural logarithm.
+Float log(value Float) => Float(@math$log(value))
+Float pow(base Float, exponent Float) => Float(@math$pow(base, exponent))
+/// `sqrt(x * x + y * y)`, without overflow or underflow in between.
+Float hypot(x Float, y Float) => Float(@math$hypot(x, y))
