@@ -151,5 +151,19 @@ Unit main() {
 	words!push("a");
 	words!push("b");
 	console!check(words[Int(1)] + words[Int(2)] == "ab");
+
+	// Removing from a List: in order, and by moving the last one in.
+	console!check(list!remove(Int(2)) == 4);
+	console!check(list:size() == 4);
+	console!check(list[Int(2)] == 9);
+	console!check(list!swapRemove(Int(1)) == 1);
+	console!check(list[Int(1)] == 0);
+	console!check(list:size() == 3);
+	words!push("c");
+	removed String = words!remove(Int(1));
+	console!check(removed + words[Int(1)] + words[Int(2)] == "abc");
+	words!swapRemove(Int(1));
+	console!check(words:size() == 1);
+	console!check(words[Int(1)] == "c");
 	return Unit();
 }
