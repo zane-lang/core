@@ -52,9 +52,9 @@ Float roundEven(value Float) => Float(@math$roundEven(value._value))
 Float fma(left Float, right Float, addend Float) => Float(@math$fma(left._value, right._value, addend._value))
 /// `magnitude` with the sign of `sign`.
 Float copySign(magnitude Float, sign Float) => Float(@math$copySign(magnitude._value, sign._value))
-/// The lesser operand, or a NaN when either is one.
+/// The lesser operand, or a NaN when either is a NaN.
 Float min(left Float, right Float) => Float(@math$min(left._value, right._value))
-/// The greater operand, or a NaN when either is one.
+/// The greater operand, or a NaN when either is a NaN.
 Float max(left Float, right Float) => Float(@math$max(left._value, right._value))
 
 
