@@ -19,8 +19,8 @@ implicit Bool(v @primitives$Bool) => init{
 implicit @primitives$Bool(v Bool) => v._value
 
 Bool ~(v Bool) => Bool(@operators$not(v._value))
-Bool *(left Bool, right Bool) => Bool(@operators$and(left._value, right._value))
-Bool +(left Bool, right Bool) => Bool(@operators$or(left._value, right._value))
+Bool and(left Bool, right Bool) => Bool(@operators$conjoin(left._value, right._value))
+Bool or(left Bool, right Bool) => Bool(@operators$disjoin(left._value, right._value))
 Bool ==(left Bool, right Bool) => Bool(@operators$equal(left._value, right._value))
 
 
@@ -42,6 +42,19 @@ Int /(left Int, right Int) => Int(@operators$divide(left._value, right._value))
 Bool ==(left Int, right Int) => Bool(@operators$equal(left._value, right._value))
 Bool <(left Int, right Int) => Bool(@operators$lessThan(left._value, right._value))
 
+/// A literal operand on either side. An operand is never converted, so a
+/// literal reaches an operator only through an overload that takes it.
+Int +(left Int, right @concepts$Int) => left + Int(right)
+Int +(left @concepts$Int, right Int) => Int(left) + right
+Int *(left Int, right @concepts$Int) => left * Int(right)
+Int *(left @concepts$Int, right Int) => Int(left) * right
+Int /(left Int, right @concepts$Int) => left / Int(right)
+Int /(left @concepts$Int, right Int) => Int(left) / right
+Bool ==(left Int, right @concepts$Int) => left == Int(right)
+Bool ==(left @concepts$Int, right Int) => Int(left) == right
+Bool <(left Int, right @concepts$Int) => left < Int(right)
+Bool <(left @concepts$Int, right Int) => Int(left) < right
+
 
 // Float
 type Float = struct {
@@ -62,6 +75,18 @@ Float /(left Float, right Float) => Float(@operators$divide(left._value, right._
 Bool ==(left Float, right Float) => Bool(@operators$equal(left._value, right._value))
 Bool <(left Float, right Float) => Bool(@operators$lessThan(left._value, right._value))
 
+/// A literal operand on either side, as for `Int`.
+Float +(left Float, right @concepts$Float) => left + Float(right)
+Float +(left @concepts$Float, right Float) => Float(left) + right
+Float *(left Float, right @concepts$Float) => left * Float(right)
+Float *(left @concepts$Float, right Float) => Float(left) * right
+Float /(left Float, right @concepts$Float) => left / Float(right)
+Float /(left @concepts$Float, right Float) => Float(left) / right
+Bool ==(left Float, right @concepts$Float) => left == Float(right)
+Bool ==(left @concepts$Float, right Float) => Float(left) == right
+Bool <(left Float, right @concepts$Float) => left < Float(right)
+Bool <(left @concepts$Float, right Float) => Float(left) < right
+
 
 // String
 type String = struct {
@@ -77,6 +102,12 @@ implicit @primitives$String(v String) => v._value
 
 String +(left String, right String) => String(@operators$concat(left._value, right._value))
 Bool ==(left String, right String) => Bool(@operators$equal(left._value, right._value))
+
+/// A literal operand on either side, as for `Int`.
+String +(left String, right @concepts$String) => left + String(right)
+String +(left @concepts$String, right String) => String(left) + right
+Bool ==(left String, right @concepts$String) => left == String(right)
+Bool ==(left @concepts$String, right String) => String(left) == right
 
 /// The integer the text spells: a literal's digits with an optional `-`.
 /// Aborts when the text spells none, or one too large for an `Int`.
