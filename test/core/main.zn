@@ -53,6 +53,8 @@ Unit main() {
 	console!check(~(yes and no));
 	console!check(~(no or no));
 	console!check(Int(1) < 2 or Int(2) < 1 and Int(3) < 1);
+	console!check(yes and true and ~(no or false) and true or no);
+	console!check(yes == true and false == no and ~(true == no));
 
 	// A literal operand on either side.
 	console!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);

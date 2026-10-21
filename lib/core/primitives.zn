@@ -23,6 +23,15 @@ Bool and(left Bool, right Bool) => Bool(@operators$conjoin(left._value, right._v
 Bool or(left Bool, right Bool) => Bool(@operators$disjoin(left._value, right._value))
 Bool ==(left Bool, right Bool) => Bool(@operators$equal(left._value, right._value))
 
+/// `true` or `false` on either side. An operand is never converted, so the
+/// primitive they are reaches these only through overloads that take it.
+Bool and(left Bool, right @primitives$Bool) => left and Bool(right)
+Bool and(left @primitives$Bool, right Bool) => Bool(left) and right
+Bool or(left Bool, right @primitives$Bool) => left or Bool(right)
+Bool or(left @primitives$Bool, right Bool) => Bool(left) or right
+Bool ==(left Bool, right @primitives$Bool) => left == Bool(right)
+Bool ==(left @primitives$Bool, right Bool) => Bool(left) == right
+
 
 // Int
 type Int = struct {
