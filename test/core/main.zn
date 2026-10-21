@@ -37,8 +37,8 @@ Unit main() {
 	res Float = Float(3.0) * 3.0;
 	console!check(res == 9.0);
 	console!check(Int(7) - Int(2) == 5);
-	console!check(Int(2) < 3 '* Int(3) > 2);
-	console!check(Int(3) <= 3 '* Int(4) >= 3 '* Int(4) ~= 3);
+	console!check(Int(2) < 3 and Int(3) > 2);
+	console!check(Int(3) <= 3 and Int(4) >= 3 and Int(4) ~= 3);
 	console!check(Int(7) / 2 == 3);
 	console!check(Float(Int(7)) / Float(Int(2)) == 3.5);
 	console!check(Float(Int(2)) == 2.0);
@@ -48,14 +48,26 @@ Unit main() {
 	// Bool algebra.
 	yes Bool = Bool(true);
 	no Bool = Bool(false);
-	console!check(yes * ~no);
-	console!check(no + yes);
+	console!check(yes and ~no);
+	console!check(no or yes);
+	console!check(~(yes and no));
+	console!check(~(no or no));
+	console!check(Int(1) < 2 or Int(2) < 1 and Int(3) < 1);
+	console!check(yes and true and ~(no or false) and true or no);
+	console!check(yes == true and false == no and ~(true == no));
+
+	// A literal operand on either side.
+	console!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);
+	console!check(1.5 < Float(2.0) and 3.0 / Float(2.0) == 1.5);
+	console!check(Int(7) - 2 == 5 and Float(7.0) - 2.5 == 4.5);
+	console!check(Int(~3) + 5 == 2 and ~1.5 < Float(0.0));
 	console!check(~(yes == no));
 	console!check(yes ~= no);
 
 	// String.
 	greeting String = String("hello");
 	console!check(greeting + " world" == "hello world");
+	console!check("say " + greeting == "say hello");
 	console!check(String(Int(42)) == "42");
 	console!check(String(Float(2.5)) == "2.5");
 
@@ -77,7 +89,7 @@ Unit main() {
 	same Bool = Bool(true);
 	k Int = Int(1);
 	k!to(args:size()) {
-		same = same * (args[k] == String(raw[k]));
+		same = same and args[k] == String(raw[k]);
 	}
 	console!check(same);
 

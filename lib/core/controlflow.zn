@@ -6,8 +6,8 @@ Bool if(condition Bool, body @concepts$Block) {
 }
 
 Unit elif(this Bool, condition Bool, body @concepts$Block) mut {
-	@controlflow$branch(~this * condition, body);
-	this = this + condition;
+	@controlflow$branch(~this and condition, body);
+	this = this or condition;
 	return Unit();
 }
 
