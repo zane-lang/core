@@ -59,6 +59,8 @@ Unit main() {
 	// A literal operand on either side.
 	console!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);
 	console!check(1.5 < Float(2.0) and 3.0 / Float(2.0) == 1.5);
+	console!check(Int(7) - 2 == 5 and Float(7.0) - 2.5 == 4.5);
+	console!check(Int(~3) + 5 == 2 and ~1.5 < Float(0.0));
 	console!check(~(yes == no));
 	console!check(yes ~= no);
 
