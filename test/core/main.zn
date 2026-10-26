@@ -71,6 +71,14 @@ Unit main() {
 	console!check(String(Int(42)) == "42");
 	console!check(String(Float(2.5)) == "2.5");
 
+	// A literal: a value interpolated into it is copied in, and its text
+	// escapes are read in its own text, never in that value.
+	console!check(String("say \%greeting!") == "say hello!");
+	console!check(String("\n") == String(@primitives$String.escaped("\n")));
+	console!check(String("\n") ~= String(@primitives$String("\n")));
+	written String = String(@primitives$String("a\nb"));
+	console!check(String("[\%written]") == String(@primitives$String("[a\nb]")));
+
 	// Numbers read from text.
 	console!check((String("42"):parseInt() ?? Int(0)) == 42);
 	console!check((String("-7"):parseInt() ?? Int(0)) == ~Int(7));
