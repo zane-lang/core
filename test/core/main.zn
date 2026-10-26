@@ -22,6 +22,18 @@ Int firstAbove(values List<Int>, limit Int) {
 	return Int(0);
 }
 
+/// A value type that holds a list, which is legal since a `List` is a value.
+type Shelf = struct {
+	labels List<String>;
+}
+Shelf(labels List<String>) => init{ labels; }
+
+/// An owner, which a `ListRef` holds and a `List` cannot.
+type Jar = #struct {
+	beans Int;
+}
+Jar(beans Int) => init{ beans; }
+
 Unit printUnlessStopped(this Console, stop Bool) mut {
 	do() {
 		guard(stop);
@@ -185,5 +197,32 @@ Unit main() {
 	console!check(words!swapRemove(Int(1)) == "b");
 	console!check(words:size() == 1);
 	console!check(words[Int(1)] == "c");
+
+	// A List is a value: a copy owns elements of its own.
+	copied List<String> = words;
+	copied!push("d");
+	copied[Int(1)] = String("e");
+	console!check(words:size() == 1);
+	console!check(words[Int(1)] == "c");
+	console!check(copied[Int(1)] + copied[Int(2)] == "ed");
+	shelf Shelf(copied);
+	shelf.labels!push("f");
+	console!check(copied:size() == 2);
+	console!check(shelf.labels:size() == 3);
+
+	// ListRef: a list of owners.
+	jars ListRef<Jar> = ListRef(Jar);
+	jars!push(Jar(Int(1)));
+	jars!push(Jar(Int(2)));
+	jars!push(Jar(Int(3)));
+	console!check(jars:size() == 3);
+	jars[Int(2)].beans = Int(20);
+	console!check(jars[Int(2)].beans == 20);
+	moved ^Jar = jars!remove(Int(1));
+	console!check(moved.beans == 1);
+	console!check(jars[Int(1)].beans == 20);
+	console!check(jars!swapRemove(Int(1)).beans == 20);
+	console!check(jars:size() == 1);
+	console!check(jars[Int(1)].beans == 3);
 	return Unit();
 }

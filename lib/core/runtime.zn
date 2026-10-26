@@ -9,9 +9,9 @@ Runtime(runtime &@runtime$Runtime) => init{
 }
 
 /// The arguments the program was started with, without its own name.
-^List<String> arguments(this Runtime) {
-	raw ^@primitives$List<@primitives$String> = this._runtime:arguments();
-	args ^List<String> = List(String);
+List<String> arguments(this Runtime) {
+	raw @primitives$List<@primitives$String> = this._runtime:arguments();
+	args List<String> = List(String);
 	i Int = Int(1);
 	i!to(Int(raw:size())) {
 		args!push(String(raw[i._value]));
