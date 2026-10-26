@@ -15,7 +15,7 @@ Unit check(this Console, ok Bool) mut {
 
 /// Within a tolerance of the true value: an approximate function's last
 /// digit is the platform's (math.md §2.6).
-Bool near(value Float, expected Float) => abs(value - expected) < 0.000000000001
+Bool near(value Float, expected Float) => abs(value - expected) < 0.000000000001;
 
 Unit main() {
 	console Console(@program$console);

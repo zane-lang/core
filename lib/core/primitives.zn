@@ -16,21 +16,21 @@ type Bool = struct {
 implicit Bool(v @primitives$Bool) => init{
 	_value = v;
 }
-implicit @primitives$Bool(v Bool) => v._value
+implicit @primitives$Bool(v Bool) => v._value;
 
-Bool ~(v Bool) => Bool(@operators$not(v._value))
-Bool and(left Bool, right Bool) => Bool(@operators$conjoin(left._value, right._value))
-Bool or(left Bool, right Bool) => Bool(@operators$disjoin(left._value, right._value))
-Bool ==(left Bool, right Bool) => Bool(@operators$equal(left._value, right._value))
+Bool ~(v Bool) => Bool(@operators$not(v._value));
+Bool and(left Bool, right Bool) => Bool(@operators$conjoin(left._value, right._value));
+Bool or(left Bool, right Bool) => Bool(@operators$disjoin(left._value, right._value));
+Bool ==(left Bool, right Bool) => Bool(@operators$equal(left._value, right._value));
 
 /// `true` or `false` on either side. An operand is never converted, so the
 /// primitive they are reaches these only through overloads that take it.
-Bool and(left Bool, right @primitives$Bool) => left and Bool(right)
-Bool and(left @primitives$Bool, right Bool) => Bool(left) and right
-Bool or(left Bool, right @primitives$Bool) => left or Bool(right)
-Bool or(left @primitives$Bool, right Bool) => Bool(left) or right
-Bool ==(left Bool, right @primitives$Bool) => left == Bool(right)
-Bool ==(left @primitives$Bool, right Bool) => Bool(left) == right
+Bool and(left Bool, right @primitives$Bool) => left and Bool(right);
+Bool and(left @primitives$Bool, right Bool) => Bool(left) and right;
+Bool or(left Bool, right @primitives$Bool) => left or Bool(right);
+Bool or(left @primitives$Bool, right Bool) => Bool(left) or right;
+Bool ==(left Bool, right @primitives$Bool) => left == Bool(right);
+Bool ==(left @primitives$Bool, right Bool) => Bool(left) == right;
 
 
 // Int
@@ -40,29 +40,29 @@ type Int = struct {
 Int(v @primitives$I64) => init{
 	_value = v;
 }
-implicit Int(v @concepts$Int) => Int(@primitives$I64(v))
-implicit @primitives$I64(v Int) => v._value
-Int.truncate(v Float) => Int(@primitives$I64.truncate(v._value))
+implicit Int(v @concepts$Int) => Int(@primitives$I64(v));
+implicit @primitives$I64(v Int) => v._value;
+Int.truncate(v Float) => Int(@primitives$I64.truncate(v._value));
 
-Int ~(v Int) => Int(@operators$negate(v._value))
-Int +(left Int, right Int) => Int(@operators$add(left._value, right._value))
-Int *(left Int, right Int) => Int(@operators$multiply(left._value, right._value))
-Int /(left Int, right Int) => Int(@operators$divide(left._value, right._value))
-Bool ==(left Int, right Int) => Bool(@operators$equal(left._value, right._value))
-Bool <(left Int, right Int) => Bool(@operators$lessThan(left._value, right._value))
+Int ~(v Int) => Int(@operators$negate(v._value));
+Int +(left Int, right Int) => Int(@operators$add(left._value, right._value));
+Int *(left Int, right Int) => Int(@operators$multiply(left._value, right._value));
+Int /(left Int, right Int) => Int(@operators$divide(left._value, right._value));
+Bool ==(left Int, right Int) => Bool(@operators$equal(left._value, right._value));
+Bool <(left Int, right Int) => Bool(@operators$lessThan(left._value, right._value));
 
 /// A literal operand on either side. An operand is never converted, so a
 /// literal reaches an operator only through an overload that takes it.
-Int +(left Int, right @concepts$Int) => left + Int(right)
-Int +(left @concepts$Int, right Int) => Int(left) + right
-Int *(left Int, right @concepts$Int) => left * Int(right)
-Int *(left @concepts$Int, right Int) => Int(left) * right
-Int /(left Int, right @concepts$Int) => left / Int(right)
-Int /(left @concepts$Int, right Int) => Int(left) / right
-Bool ==(left Int, right @concepts$Int) => left == Int(right)
-Bool ==(left @concepts$Int, right Int) => Int(left) == right
-Bool <(left Int, right @concepts$Int) => left < Int(right)
-Bool <(left @concepts$Int, right Int) => Int(left) < right
+Int +(left Int, right @concepts$Int) => left + Int(right);
+Int +(left @concepts$Int, right Int) => Int(left) + right;
+Int *(left Int, right @concepts$Int) => left * Int(right);
+Int *(left @concepts$Int, right Int) => Int(left) * right;
+Int /(left Int, right @concepts$Int) => left / Int(right);
+Int /(left @concepts$Int, right Int) => Int(left) / right;
+Bool ==(left Int, right @concepts$Int) => left == Int(right);
+Bool ==(left @concepts$Int, right Int) => Int(left) == right;
+Bool <(left Int, right @concepts$Int) => left < Int(right);
+Bool <(left @concepts$Int, right Int) => Int(left) < right;
 
 
 // Float
@@ -72,29 +72,29 @@ type Float = struct {
 Float(v @primitives$F64) => init{
 	_value = v;
 }
-Float(v @primitives$I64) => Float(@primitives$F64.round(v))
-Float(v Int) => Float(v._value)
-implicit Float(v @concepts$Float) => Float(@primitives$F64(v))
-implicit @primitives$F64(v Float) => v._value
+Float(v @primitives$I64) => Float(@primitives$F64.round(v));
+Float(v Int) => Float(v._value);
+implicit Float(v @concepts$Float) => Float(@primitives$F64(v));
+implicit @primitives$F64(v Float) => v._value;
 
-Float ~(v Float) => Float(@operators$negate(v._value))
-Float +(left Float, right Float) => Float(@operators$add(left._value, right._value))
-Float *(left Float, right Float) => Float(@operators$multiply(left._value, right._value))
-Float /(left Float, right Float) => Float(@operators$divide(left._value, right._value))
-Bool ==(left Float, right Float) => Bool(@operators$equal(left._value, right._value))
-Bool <(left Float, right Float) => Bool(@operators$lessThan(left._value, right._value))
+Float ~(v Float) => Float(@operators$negate(v._value));
+Float +(left Float, right Float) => Float(@operators$add(left._value, right._value));
+Float *(left Float, right Float) => Float(@operators$multiply(left._value, right._value));
+Float /(left Float, right Float) => Float(@operators$divide(left._value, right._value));
+Bool ==(left Float, right Float) => Bool(@operators$equal(left._value, right._value));
+Bool <(left Float, right Float) => Bool(@operators$lessThan(left._value, right._value));
 
 /// A literal operand on either side, as for `Int`.
-Float +(left Float, right @concepts$Float) => left + Float(right)
-Float +(left @concepts$Float, right Float) => Float(left) + right
-Float *(left Float, right @concepts$Float) => left * Float(right)
-Float *(left @concepts$Float, right Float) => Float(left) * right
-Float /(left Float, right @concepts$Float) => left / Float(right)
-Float /(left @concepts$Float, right Float) => Float(left) / right
-Bool ==(left Float, right @concepts$Float) => left == Float(right)
-Bool ==(left @concepts$Float, right Float) => Float(left) == right
-Bool <(left Float, right @concepts$Float) => left < Float(right)
-Bool <(left @concepts$Float, right Float) => Float(left) < right
+Float +(left Float, right @concepts$Float) => left + Float(right);
+Float +(left @concepts$Float, right Float) => Float(left) + right;
+Float *(left Float, right @concepts$Float) => left * Float(right);
+Float *(left @concepts$Float, right Float) => Float(left) * right;
+Float /(left Float, right @concepts$Float) => left / Float(right);
+Float /(left @concepts$Float, right Float) => Float(left) / right;
+Bool ==(left Float, right @concepts$Float) => left == Float(right);
+Bool ==(left @concepts$Float, right Float) => Float(left) == right;
+Bool <(left Float, right @concepts$Float) => left < Float(right);
+Bool <(left @concepts$Float, right Float) => Float(left) < right;
 
 
 // String
@@ -104,21 +104,21 @@ type String = struct {
 String(v @primitives$String) => init {
 	_value = v;
 }
-String(v Int) => String(@primitives$String(v._value))
-String(v Float) => String(@primitives$String(v._value))
+String(v Int) => String(@primitives$String(v._value));
+String(v Float) => String(@primitives$String(v._value));
 /// A literal reads as text with its escapes: `\n`, `\t`, `\r`, `\0` and `\\`
 /// in its literal text, never in a value interpolated into it (types.md §2.7).
-implicit String(v @concepts$String) => String(@primitives$String.escaped(v))
-implicit @primitives$String(v String) => v._value
+implicit String(v @concepts$String) => String(@primitives$String.escaped(v));
+implicit @primitives$String(v String) => v._value;
 
-String +(left String, right String) => String(@operators$concat(left._value, right._value))
-Bool ==(left String, right String) => Bool(@operators$equal(left._value, right._value))
+String +(left String, right String) => String(@operators$concat(left._value, right._value));
+Bool ==(left String, right String) => Bool(@operators$equal(left._value, right._value));
 
 /// A literal operand on either side, as for `Int`.
-String +(left String, right @concepts$String) => left + String(right)
-String +(left @concepts$String, right String) => String(left) + right
-Bool ==(left String, right @concepts$String) => left == String(right)
-Bool ==(left @concepts$String, right String) => String(left) == right
+String +(left String, right @concepts$String) => left + String(right);
+String +(left @concepts$String, right String) => String(left) + right;
+Bool ==(left String, right @concepts$String) => left == String(right);
+Bool ==(left @concepts$String, right String) => String(left) == right;
 
 /// The integer the text spells: a literal's digits with an optional `-`.
 /// Aborts when the text spells none, or one too large for an `Int`.

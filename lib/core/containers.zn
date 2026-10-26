@@ -8,8 +8,8 @@ Array<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 	_value = @primitives$Array(values);
 }
 
-Int size(this Array<T Type, n @concepts$Int>) => Int(n)
-(this Array<T Type, n @concepts$Int>)[index Int] => this._value[index._value]
+Int size(this Array<T Type, n @concepts$Int>) => Int(n);
+(this Array<T Type, n @concepts$Int>)[index Int] => this._value[index._value];
 
 
 // ArrayRef
@@ -20,8 +20,8 @@ ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef(values);
 }
 
-Int size(this ArrayRef<T Type, n @concepts$Int>) => Int(n)
-(this ArrayRef<T Type, n @concepts$Int>)[index Int] => this._value[index._value]
+Int size(this ArrayRef<T Type, n @concepts$Int>) => Int(n);
+(this ArrayRef<T Type, n @concepts$Int>)[index Int] => this._value[index._value];
 
 
 // List
@@ -32,18 +32,18 @@ List<T>(T Type) => init{
 	_value = @primitives$List(T);
 }
 
-Int size(this List<T Type>) => Int(this._value:size())
+Int size(this List<T Type>) => Int(this._value:size());
 Unit push(this List<T Type>, value T) mut {
 	this._value!push(value);
 	return Unit();
 }
 /// Takes the element at `index` out and shifts the later ones down, keeping
 /// their order.
-T remove(this List<T Type>, index Int) mut => this._value!remove(index._value)
+T remove(this List<T Type>, index Int) mut => this._value!remove(index._value);
 /// Takes the element at `index` out and moves the last one into its place,
 /// which moves one element whatever the index, but does not keep the order.
-T swapRemove(this List<T Type>, index Int) mut => this._value!swapRemove(index._value)
-(this List<T Type>)[index Int] => this._value[index._value]
+T swapRemove(this List<T Type>, index Int) mut => this._value!swapRemove(index._value);
+(this List<T Type>)[index Int] => this._value[index._value];
 
 
 // ListRef
@@ -54,15 +54,15 @@ ListRef<T>(T Type) => init{
 	_value = @primitives$ListRef(T);
 }
 
-Int size(this ListRef<T Type>) => Int(this._value:size())
+Int size(this ListRef<T Type>) => Int(this._value:size());
 Unit push(this ListRef<T Type>, value ^T) mut {
 	this._value!push(value);
 	return Unit();
 }
 /// Moves the element at `index` out and shifts the later ones down, keeping
 /// their order.
-^T remove(this ListRef<T Type>, index Int) mut => this._value!remove(index._value)
+^T remove(this ListRef<T Type>, index Int) mut => this._value!remove(index._value);
 /// Moves the element at `index` out and moves the last one into its place,
 /// which moves one element whatever the index, but does not keep the order.
-^T swapRemove(this ListRef<T Type>, index Int) mut => this._value!swapRemove(index._value)
-(this ListRef<T Type>)[index Int] => this._value[index._value]
+^T swapRemove(this ListRef<T Type>, index Int) mut => this._value!swapRemove(index._value);
+(this ListRef<T Type>)[index Int] => this._value[index._value];
