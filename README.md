@@ -76,6 +76,12 @@ verb is used.
 zane test
 ```
 
+A check that fails prints `no` and the run carries on, so `zane test` still
+reports the package as passed: read the output for any `no`.
+
+`zane test` uses the compiler `core` pins. When no release archive of that
+version exists for your platform, point `ZANE_COMPILER` at a newer `zanec`.
+
 `zane.coda` pins the compiler version `core` is built with, and
 `zane-lock.coda` its exact commit. A change that needs a newer compiler moves
 both together, to a compiler that has a release tag.
