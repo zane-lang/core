@@ -85,3 +85,9 @@ version exists for your platform, point `ZANE_COMPILER` at a newer `zanec`.
 `zane.coda` pins the compiler version `core` is built with, and
 `zane-lock.coda` its exact commit. A change that needs a newer compiler moves
 both together, to a compiler that has a release tag.
+
+## License
+
+`core` is under the MIT No Attribution license (MIT-0); see
+[`LICENSE`](LICENSE). Its code is compiled into every Zane program, and
+MIT-0 asks nothing of those programs, not even a copyright notice.
