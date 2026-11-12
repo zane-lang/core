@@ -57,5 +57,27 @@ Unit main() {
 	console!check(near(cbrt(~Float(27.0)), ~Float(3.0)));
 	console!check(near(hypot(Float(3.0), Float(4.0)), 5.0));
 
+	// I32 and F32.
+	console!check(bitAnd(I32(12), I32(10)) == 8 and bitOr(I32(12), I32(10)) == 14);
+	console!check(bitXor(I32(12), I32(10)) == 6 and bitNot(I32(0)) == ~1);
+	console!check(shiftLeft(I32(1), I32(33)) == 2);
+	console!check(shiftLeft(I32(1), I32(31)) == ~I32(2147483647) - 1);
+	console!check(shiftRight(~I32(16), I32(2)) == ~4);
+	console!check(shiftRightLogical(~I32(1), I32(28)) == 15);
+	console!check(rotateRight(rotateLeft(I32(6), I32(3)), I32(3)) == 6);
+	console!check(popCount(I32(255)) == 8 and popCount(bitNot(I32(1))) == 31);
+	console!check(leadingZeros(I32(0)) == 32 and trailingZeros(I32(0)) == 32);
+	console!check(trailingZeros(I32(8)) == 3);
+	console!check(abs(~I32(5)) == 5 and min(I32(3), ~I32(2)) == ~2 and max(I32(3), ~I32(2)) == 3);
+	console!check(sqrt(F32(16.0)) == 4.0 and abs(~F32(2.5)) == 2.5);
+	console!check(floor(~F32(1.5)) == ~F32(2.0) and ceil(F32(1.25)) == 2.0);
+	console!check(trunc(~F32(1.75)) == ~F32(1.0) and roundEven(F32(2.5)) == 2.0);
+	console!check(fma(F32(2.0), F32(3.0), F32(1.0)) == 7.0);
+	console!check(copySign(F32(2.0), ~F32(1.0)) == ~F32(2.0));
+	console!check(min(F32(1.0), F32(2.0)) == 1.0 and max(F32(1.0), F32(2.0)) == 2.0);
+	console!check(abs(sin(F32(0.5)) - F32(0.4794255)) < 0.00001);
+	console!check(abs(pow(F32(2.0), F32(10.0)) - F32(1024.0)) < 0.001);
+	console!check(abs(hypot(F32(3.0), F32(4.0)) - F32(5.0)) < 0.00001);
+
 	return Unit();
 }
