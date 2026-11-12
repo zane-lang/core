@@ -79,5 +79,34 @@ Unit main() {
 	console!check(abs(pow(F32(2.0), F32(10.0)) - F32(1024.0)) < 0.001);
 	console!check(abs(hypot(F32(3.0), F32(4.0)) - F32(5.0)) < 0.00001);
 
+	// A call whose arguments are all literals takes Int or Float.
+	console!check(bitAnd(12, 10) == 8 and bitOr(12, 10) == 14 and bitXor(12, 10) == 6);
+	console!check(bitNot(0) == ~Int(1));
+	console!check(shiftLeft(1, 65) == 2 and shiftRight(~Int(16), 2) == ~Int(4));
+	console!check(shiftRightLogical(~Int(1), 60) == 15);
+	console!check(rotateRight(rotateLeft(6, 3), 3) == 6);
+	console!check(popCount(255) == 8 and leadingZeros(0) == 64 and trailingZeros(8) == 3);
+	console!check(abs(3) == 3 and min(3, 2) == 2 and max(3, 2) == 3);
+	console!check(sqrt(16.0) == 4.0 and abs(2.5) == 2.5);
+	console!check(floor(1.5) == 1.0 and ceil(1.25) == 2.0 and trunc(2.75) == 2.0);
+	console!check(roundEven(2.5) == 2.0 and roundEven(3.5) == 4.0);
+	console!check(fma(2.0, 3.0, 1.0) == 7.0 and copySign(2.0, 1.0) == 2.0);
+	console!check(min(1.5, 2.5) == 1.5 and max(1.5, 2.5) == 2.5);
+	console!check(near(cbrt(27.0), 3.0) and near(sin(0.0), 0.0) and near(cos(0.0), 1.0));
+	console!check(near(tan(0.0), 0.0) and near(asin(0.0), 0.0) and near(acos(1.0), 0.0));
+	console!check(near(atan(0.0), 0.0) and near(atan2(0.0, 1.0), 0.0));
+	console!check(near(exp(0.0), 1.0) and near(log(1.0), 0.0) and near(pow(2.0, 3.0), 8.0));
+	console!check(near(hypot(3.0, 4.0), 5.0));
+	console!check(I32.truncate(2.75) == 2 and F32.round(3) == 3.0 and F32.round(2.5) == 2.5);
+	console!check(String(5) == "5" and String(2.5) == "2.5");
+	console!check(Float(139968) == 139968.0);
+
+	// A typed operand keeps the call on its own width.
+	x Int = Int(12);
+	y Float = Float(16.0);
+	console!check(bitAnd(x, 10) == 8 and bitAnd(10, x) == 8 and max(x, 3) == 12);
+	console!check(sqrt(y) == 4.0 and min(y, 2.5) == 2.5 and max(2.5, y) == 16.0);
+	console!check(bitAnd(I32(12), 10) == 8 and min(F32(1.5), 2.5) == 1.5);
+
 	return Unit();
 }
