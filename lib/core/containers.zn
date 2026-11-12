@@ -31,6 +31,16 @@ type List<T Type> = struct {
 List<T>(T Type) => init{
 	_value = @primitives$List(T);
 }
+/// `n` copies of `value`, in a block made once for all of them: none when
+/// `n` is below one.
+List<T>(n Int, value T Type) {
+	values @primitives$List<T> = @primitives$List(T);
+	@controlflow$repeat(n, {
+		copy T = value;
+		values!push(copy);
+	});
+	return init{ _value = values; }
+}
 
 Int size(this List<T Type>) => Int(this._value:size());
 Unit push(this List<T Type>, value T) mut {
