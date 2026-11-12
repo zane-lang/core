@@ -184,6 +184,28 @@ Unit main() {
 	words!push("b");
 	console!check(words[Int(1)] + words[Int(2)] == "ab");
 
+	// A List of n copies of one value.
+	zeros List<I32> = List(Int(1000), I32(0));
+	console!check(zeros:size() == 1000);
+	console!check(zeros[Int(1)] == 0 and zeros[Int(1000)] == 0);
+	zeros[Int(500)] = I32(5);
+	console!check(zeros[Int(499)] == 0 and zeros[Int(500)] == 5 and zeros[Int(501)] == 0);
+	none List<Int> = List(Int(0), Int(7));
+	console!check(none:size() == 0);
+	below List<Int> = List(~Int(3), Int(7));
+	console!check(below:size() == 0);
+	none!push(Int(8));
+	console!check(none:size() == 1 and none[Int(1)] == 8);
+	flags List<Bool> = List(Int(3), Bool(false));
+	console!check(flags:size() == 3 and ~flags[Int(3)]);
+	// Each copy owns its own bytes: changing one leaves the others.
+	marks List<String> = List(Int(3), String("ab"));
+	marks[Int(2)] = marks[Int(2)] + "c";
+	console!check(marks[Int(1)] + marks[Int(2)] + marks[Int(3)] == "ababcab");
+	nested List<List<Int>> = List(Int(2), List(Int(2), Int(1)));
+	nested[Int(1)]!push(Int(9));
+	console!check(nested[Int(1)]:size() == 3 and nested[Int(2)]:size() == 2);
+
 	// Removing from a List: in order, and by moving the last one in.
 	console!check(list!remove(Int(2)) == 4);
 	console!check(list:size() == 4);
