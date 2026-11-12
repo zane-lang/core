@@ -52,7 +52,7 @@ Unit main() {
 | [`containers.zn`](lib/core/containers.zn) | `Array` and `List` (values), `ArrayRef` and `ListRef` (for owners that must stay in place) |
 | [`console.zn`](lib/core/console.zn) | `Console`, which prints |
 | [`runtime.zn`](lib/core/runtime.zn) | `Runtime`: the program's command-line `arguments` and its thread count |
-| [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int`, each also over `I32` and `F32` |
+| [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int` and `I32`; the float functions also over `F32` |
 
 A program is handed its console and runtime as `@program$console` and
 `@program$runtime`, and wraps them in `Console` and `Runtime`. Code it does not
