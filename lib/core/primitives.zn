@@ -97,6 +97,86 @@ Bool <(left Float, right @concepts$Float) => left < Float(right);
 Bool <(left @concepts$Float, right Float) => Float(left) < right;
 
 
+// I32
+/// A 32-bit integer, for compact storage of bounded data: a `List<I32>` takes
+/// 4 bytes per element. `Int` stays the default for counts, indices and loops;
+/// widen with `Int(x)` where one is needed.
+type I32 = struct {
+	_value @primitives$I32;
+}
+I32(v @primitives$I32) => init{
+	_value = v;
+}
+implicit I32(v @concepts$Int) => I32(@primitives$I32(v));
+implicit @primitives$I32(v I32) => v._value;
+/// The low 32 bits of `v`, read as a signed integer.
+I32.wrap(v Int) => I32(@primitives$I32.wrap(v._value));
+/// `v` rounded toward zero, held to the range of an `I32`.
+I32.truncate(v F32) => I32(@primitives$I32.truncate(v._value));
+I32.truncate(v Float) => I32(@primitives$I32.truncate(v._value));
+/// Exact: every `I32` is an `Int`.
+Int(v I32) => Int(@primitives$I64(v._value));
+
+I32 ~(v I32) => I32(@operators$negate(v._value));
+I32 +(left I32, right I32) => I32(@operators$add(left._value, right._value));
+I32 *(left I32, right I32) => I32(@operators$multiply(left._value, right._value));
+I32 /(left I32, right I32) => I32(@operators$divide(left._value, right._value));
+Bool ==(left I32, right I32) => Bool(@operators$equal(left._value, right._value));
+Bool <(left I32, right I32) => Bool(@operators$lessThan(left._value, right._value));
+
+/// A literal operand on either side, as for `Int`.
+I32 +(left I32, right @concepts$Int) => left + I32(right);
+I32 +(left @concepts$Int, right I32) => I32(left) + right;
+I32 *(left I32, right @concepts$Int) => left * I32(right);
+I32 *(left @concepts$Int, right I32) => I32(left) * right;
+I32 /(left I32, right @concepts$Int) => left / I32(right);
+I32 /(left @concepts$Int, right I32) => I32(left) / right;
+Bool ==(left I32, right @concepts$Int) => left == I32(right);
+Bool ==(left @concepts$Int, right I32) => I32(left) == right;
+Bool <(left I32, right @concepts$Int) => left < I32(right);
+Bool <(left @concepts$Int, right I32) => I32(left) < right;
+
+
+// F32
+/// A 32-bit float, for compact storage of bounded data. `Float` stays the
+/// default for general arithmetic.
+type F32 = struct {
+	_value @primitives$F32;
+}
+F32(v @primitives$F32) => init{
+	_value = v;
+}
+implicit F32(v @concepts$Float) => F32(@primitives$F32(v));
+implicit @primitives$F32(v F32) => v._value;
+/// The `F32` nearest `v`, a tie going to the even one.
+F32.round(v Float) => F32(@primitives$F32.round(v._value));
+F32.round(v I32) => F32(@primitives$F32.round(v._value));
+F32.round(v Int) => F32(@primitives$F32.round(v._value));
+/// Exact: every `F32` is a `Float`.
+Float(v F32) => Float(@primitives$F64(v._value));
+/// Exact: every `I32` is a `Float`.
+Float(v I32) => Float(@primitives$F64(v._value));
+
+F32 ~(v F32) => F32(@operators$negate(v._value));
+F32 +(left F32, right F32) => F32(@operators$add(left._value, right._value));
+F32 *(left F32, right F32) => F32(@operators$multiply(left._value, right._value));
+F32 /(left F32, right F32) => F32(@operators$divide(left._value, right._value));
+Bool ==(left F32, right F32) => Bool(@operators$equal(left._value, right._value));
+Bool <(left F32, right F32) => Bool(@operators$lessThan(left._value, right._value));
+
+/// A literal operand on either side, as for `Int`.
+F32 +(left F32, right @concepts$Float) => left + F32(right);
+F32 +(left @concepts$Float, right F32) => F32(left) + right;
+F32 *(left F32, right @concepts$Float) => left * F32(right);
+F32 *(left @concepts$Float, right F32) => F32(left) * right;
+F32 /(left F32, right @concepts$Float) => left / F32(right);
+F32 /(left @concepts$Float, right F32) => F32(left) / right;
+Bool ==(left F32, right @concepts$Float) => left == F32(right);
+Bool ==(left @concepts$Float, right F32) => F32(left) == right;
+Bool <(left F32, right @concepts$Float) => left < F32(right);
+Bool <(left @concepts$Float, right F32) => F32(left) < right;
+
+
 // String
 type String = struct {
 	_value @primitives$String;
@@ -106,6 +186,8 @@ String(v @primitives$String) => init {
 }
 String(v Int) => String(@primitives$String(v._value));
 String(v Float) => String(@primitives$String(v._value));
+String(v I32) => String(@primitives$String(v._value));
+String(v F32) => String(@primitives$String(v._value));
 /// A literal reads as text with its escapes: `\n`, `\t`, `\r`, `\0` and `\\`
 /// in its literal text, never in a value interpolated into it (types.md §2.7).
 implicit String(v @concepts$String) => String(@primitives$String.escaped(v));

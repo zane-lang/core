@@ -2,8 +2,8 @@ package math;
 
 import core$;
 
-// The math functions (math.md §3), over core's Int and Float. Each is a
-// function, not a method: it computes a result from its inputs
+// The math functions (math.md §3), over core's Int, Float, I32 and F32. Each is
+// a function, not a method: it computes a result from its inputs
 // (functions.md §3.6). Each operand reaches its intrinsic through core's
 // implicit conversion to the scalar it holds.
 
@@ -80,3 +80,77 @@ Float log(value Float) => Float(@math$log(value));
 Float pow(base Float, exponent Float) => Float(@math$pow(base, exponent));
 /// `sqrt(x * x + y * y)`, without overflow or underflow in between.
 Float hypot(x Float, y Float) => Float(@math$hypot(x, y));
+
+
+// I32
+/// Each bit set where it is set in both operands.
+I32 bitAnd(left I32, right I32) => I32(@math$bitAnd(left, right));
+/// Each bit set where it is set in either operand.
+I32 bitOr(left I32, right I32) => I32(@math$bitOr(left, right));
+/// Each bit set where it is set in exactly one operand.
+I32 bitXor(left I32, right I32) => I32(@math$bitXor(left, right));
+/// Every bit flipped.
+I32 bitNot(value I32) => I32(@math$bitNot(value));
+/// The bits moved `count` places up, zeros filling in. The count is taken
+/// modulo 32.
+I32 shiftLeft(value I32, count I32) => I32(@math$shiftLeft(value, count));
+/// The bits moved `count` places down, copies of the sign bit filling in.
+/// The count is taken modulo 32.
+I32 shiftRight(value I32, count I32) => I32(@math$shiftRight(value, count));
+/// The bits moved `count` places down, zeros filling in. The count is taken
+/// modulo 32.
+I32 shiftRightLogical(value I32, count I32) => I32(@math$shiftRightLogical(value, count));
+/// The bits moved `count` places up, those moved out filling in below.
+I32 rotateLeft(value I32, count I32) => I32(@math$rotateLeft(value, count));
+/// The bits moved `count` places down, those moved out filling in above.
+I32 rotateRight(value I32, count I32) => I32(@math$rotateRight(value, count));
+/// The number of set bits.
+I32 popCount(value I32) => I32(@math$popCount(value));
+/// The number of zero bits above the highest set bit; 32 for zero.
+I32 leadingZeros(value I32) => I32(@math$leadingZeros(value));
+/// The number of zero bits below the lowest set bit; 32 for zero.
+I32 trailingZeros(value I32) => I32(@math$trailingZeros(value));
+/// The magnitude. The most negative `I32` gives itself back.
+I32 abs(value I32) => I32(@math$abs(value));
+I32 min(left I32, right I32) => I32(@math$min(left, right));
+I32 max(left I32, right I32) => I32(@math$max(left, right));
+
+
+// F32: exact
+/// The square root, correctly rounded; a NaN below zero.
+F32 sqrt(value F32) => F32(@math$sqrt(value));
+F32 abs(value F32) => F32(@math$abs(value));
+F32 floor(value F32) => F32(@math$floor(value));
+F32 ceil(value F32) => F32(@math$ceil(value));
+/// Rounded toward zero to an integer.
+F32 trunc(value F32) => F32(@math$trunc(value));
+/// Rounded to the nearest integer, a tie going to the even one.
+F32 roundEven(value F32) => F32(@math$roundEven(value));
+/// `left * right + addend`, rounded once.
+F32 fma(left F32, right F32, addend F32) => F32(@math$fma(left, right, addend));
+/// `magnitude` with the sign of `sign`.
+F32 copySign(magnitude F32, sign F32) => F32(@math$copySign(magnitude, sign));
+/// The lesser operand, or a NaN when either is a NaN.
+F32 min(left F32, right F32) => F32(@math$min(left, right));
+/// The greater operand, or a NaN when either is a NaN.
+F32 max(left F32, right F32) => F32(@math$max(left, right));
+
+
+// F32: approximate, the platform's C math library (math.md §2.6)
+F32 cbrt(value F32) => F32(@math$cbrt(value));
+/// Of an angle in radians.
+F32 sin(value F32) => F32(@math$sin(value));
+F32 cos(value F32) => F32(@math$cos(value));
+F32 tan(value F32) => F32(@math$tan(value));
+/// In radians.
+F32 asin(value F32) => F32(@math$asin(value));
+F32 acos(value F32) => F32(@math$acos(value));
+F32 atan(value F32) => F32(@math$atan(value));
+/// The angle in radians, from -π to π, of the point (x, y).
+F32 atan2(y F32, x F32) => F32(@math$atan2(y, x));
+F32 exp(value F32) => F32(@math$exp(value));
+/// The natural logarithm.
+F32 log(value F32) => F32(@math$log(value));
+F32 pow(base F32, exponent F32) => F32(@math$pow(base, exponent));
+/// `sqrt(x * x + y * y)`, without overflow or underflow in between.
+F32 hypot(x F32, y F32) => F32(@math$hypot(x, y));

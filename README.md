@@ -13,7 +13,7 @@ This repository holds two library packages:
 - **`core`** ([`lib/core/`](lib/core/)): the types and verbs almost every
   program uses.
 - **`math`** ([`lib/math/`](lib/math/)): math functions over `core`'s `Int`
-  and `Float`.
+  and `Float`, and over the narrow `I32` and `F32`.
 
 ## Using it
 
@@ -47,12 +47,12 @@ Unit main() {
 
 | File | What it declares |
 |---|---|
-| [`primitives.zn`](lib/core/primitives.zn) | `Unit`, `Bool`, `Int`, `Float` and `String`, with their operators and conversions |
+| [`primitives.zn`](lib/core/primitives.zn) | `Unit`, `Bool`, `Int`, `Float`, `String`, and the narrow scalars `I32` and `F32` (compact storage; `Int` and `Float` stay the defaults), with their operators and conversions |
 | [`controlflow.zn`](lib/core/controlflow.zn) | `if`, `elif`, `else`, `guard`, `do`, and the counting loop `to` |
 | [`containers.zn`](lib/core/containers.zn) | `Array` and `List` (values), `ArrayRef` and `ListRef` (for owners that must stay in place) |
 | [`console.zn`](lib/core/console.zn) | `Console`, which prints |
 | [`runtime.zn`](lib/core/runtime.zn) | `Runtime`: the program's command-line `arguments` and its thread count |
-| [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int` |
+| [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int`, each also over `I32` and `F32` |
 
 A program is handed its console and runtime as `@program$console` and
 `@program$runtime`, and wraps them in `Console` and `Runtime`. Code it does not
