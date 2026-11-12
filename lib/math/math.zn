@@ -154,3 +154,48 @@ F32 log(value F32) => F32(@math$log(value));
 F32 pow(base F32, exponent F32) => F32(@math$pow(base, exponent));
 /// `sqrt(x * x + y * y)`, without overflow or underflow in between.
 F32 hypot(x F32, y F32) => F32(@math$hypot(x, y));
+
+
+// Literal arguments
+/// A call whose arguments are all literals has no operand to name a width, so
+/// the compiler does not choose (generics.md §5.4); each of these takes that
+/// choice itself, for `Int` and `Float` as the defaults. `I32` and `F32` stay
+/// opt-in: write `I32(7)`. A call with a typed operand does not reach these.
+Int bitAnd(left @concepts$Int, right @concepts$Int) => bitAnd(Int(left), Int(right));
+Int bitOr(left @concepts$Int, right @concepts$Int) => bitOr(Int(left), Int(right));
+Int bitXor(left @concepts$Int, right @concepts$Int) => bitXor(Int(left), Int(right));
+Int bitNot(value @concepts$Int) => bitNot(Int(value));
+Int shiftLeft(value @concepts$Int, count @concepts$Int) => shiftLeft(Int(value), Int(count));
+Int shiftRight(value @concepts$Int, count @concepts$Int) => shiftRight(Int(value), Int(count));
+Int shiftRightLogical(value @concepts$Int, count @concepts$Int) => shiftRightLogical(Int(value), Int(count));
+Int rotateLeft(value @concepts$Int, count @concepts$Int) => rotateLeft(Int(value), Int(count));
+Int rotateRight(value @concepts$Int, count @concepts$Int) => rotateRight(Int(value), Int(count));
+Int popCount(value @concepts$Int) => popCount(Int(value));
+Int leadingZeros(value @concepts$Int) => leadingZeros(Int(value));
+Int trailingZeros(value @concepts$Int) => trailingZeros(Int(value));
+Int abs(value @concepts$Int) => abs(Int(value));
+Int min(left @concepts$Int, right @concepts$Int) => min(Int(left), Int(right));
+Int max(left @concepts$Int, right @concepts$Int) => max(Int(left), Int(right));
+
+Float sqrt(value @concepts$Float) => sqrt(Float(value));
+Float abs(value @concepts$Float) => abs(Float(value));
+Float floor(value @concepts$Float) => floor(Float(value));
+Float ceil(value @concepts$Float) => ceil(Float(value));
+Float trunc(value @concepts$Float) => trunc(Float(value));
+Float roundEven(value @concepts$Float) => roundEven(Float(value));
+Float fma(left @concepts$Float, right @concepts$Float, addend @concepts$Float) => fma(Float(left), Float(right), Float(addend));
+Float copySign(magnitude @concepts$Float, sign @concepts$Float) => copySign(Float(magnitude), Float(sign));
+Float min(left @concepts$Float, right @concepts$Float) => min(Float(left), Float(right));
+Float max(left @concepts$Float, right @concepts$Float) => max(Float(left), Float(right));
+Float cbrt(value @concepts$Float) => cbrt(Float(value));
+Float sin(value @concepts$Float) => sin(Float(value));
+Float cos(value @concepts$Float) => cos(Float(value));
+Float tan(value @concepts$Float) => tan(Float(value));
+Float asin(value @concepts$Float) => asin(Float(value));
+Float acos(value @concepts$Float) => acos(Float(value));
+Float atan(value @concepts$Float) => atan(Float(value));
+Float atan2(y @concepts$Float, x @concepts$Float) => atan2(Float(y), Float(x));
+Float exp(value @concepts$Float) => exp(Float(value));
+Float log(value @concepts$Float) => log(Float(value));
+Float pow(base @concepts$Float, exponent @concepts$Float) => pow(Float(base), Float(exponent));
+Float hypot(x @concepts$Float, y @concepts$Float) => hypot(Float(x), Float(y));

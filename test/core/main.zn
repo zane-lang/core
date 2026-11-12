@@ -272,5 +272,10 @@ Unit main() {
 	counts!push(big);
 	console!check(counts[Int(1)] == 7 and counts[Int(2)] == big);
 
+	// A call whose arguments are all literals takes Int or Float.
+	console!check(Float(139968) == 139968.0 and Float(2.5) == 2.5);
+	console!check(String(5) == "5" and String(2.5) == "2.5");
+	console!check(Int(3) == 3 and I32(3) == 3);
+
 	return Unit();
 }
