@@ -250,6 +250,25 @@ Unit main() {
 	console!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
 	console!check(String(big) == "2147483647");
 
+	// U8 (experiment): a byte that widens without its sign.
+	byte U8 = U8(200);
+	console!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
+	console!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
+	console!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
+	bytes List<U8> = List(U8);
+	b Int = Int(0);
+	b!to(Int(299)) {
+		bytes!push(U8.wrap(b));
+	}
+	console!check(bytes:size() == 300 and Int(bytes[Int(256)]) == 255 and Int(bytes[Int(258)]) == 1);
+	word String = String("héllo");
+	console!check(word:byteCount() == 6 and Int(word:byteAt(Int(1))) == 104 and Int(word:byteAt(Int(2))) == 195);
+	abc List<U8> = List(U8);
+	abc!push(U8(97));
+	abc!push(U8(98));
+	abc!push(U8(99));
+	console!check(String(abc) == "abc" and String(List(U8)) == "");
+
 	fl F32 = F32(1.5);
 	console!check(fl + 2.0 == 3.5 and 2.0 + fl == 3.5);
 	console!check(fl * F32(2.0) == 3.0 and fl * 2.0 == 3.0 and 2.0 * fl == 3.0);

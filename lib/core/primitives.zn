@@ -142,6 +142,28 @@ Bool <(left I32, right @concepts$Int) => left < I32(right);
 Bool <(left @concepts$Int, right I32) => I32(left) < right;
 
 
+// U8
+/// EXPERIMENT (LangArena zane-vs-c): an unsigned byte, for compact storage
+/// of bytes: a `List<U8>` takes 1 byte per element. It has no arithmetic of
+/// its own: widen with `Int(b)`, store with `U8.wrap(i)`.
+type U8 = struct {
+	_value @primitives$U8;
+}
+U8(v @primitives$U8) => init{
+	_value = v;
+}
+implicit U8(v @concepts$Int) => U8(@primitives$U8(v));
+implicit @primitives$U8(v U8) => v._value;
+/// The low 8 bits of `v`, read as an unsigned byte.
+U8.wrap(v Int) => U8(@primitives$U8.wrap(v._value));
+/// Exact: every `U8` is an `Int` in 0..255.
+Int(v U8) => Int(@primitives$I64(v._value));
+Bool ==(left U8, right U8) => Bool(@operators$equal(left._value, right._value));
+Bool <(left U8, right U8) => Bool(@operators$lessThan(left._value, right._value));
+Bool ==(left U8, right @concepts$Int) => left == U8(right);
+Bool ==(left @concepts$Int, right U8) => U8(left) == right;
+
+
 // F32
 /// A 32-bit float, for compact storage of bounded data. `Float` stays the
 /// default for general arithmetic.
@@ -204,6 +226,10 @@ String(v @concepts$Float) => String(Float(v));
 implicit String(v @concepts$String) => String(@primitives$String.escaped(v));
 implicit @primitives$String(v String) => v._value;
 
+/// EXPERIMENT (LangArena zane-vs-c): the string's length in bytes, and the
+/// byte at `index`, counted from 1; an index outside stops the program.
+Int byteCount(this String) => Int(this._value:byteCount());
+U8 byteAt(this String, index Int) => U8(this._value:byteAt(index._value));
 String +(left String, right String) => String(@operators$concat(left._value, right._value));
 Bool ==(left String, right String) => Bool(@operators$equal(left._value, right._value));
 

@@ -66,3 +66,6 @@ Unit push(this ListRef<T Type>, value ^T) mut {
 /// which moves one element whatever the index, but does not keep the order.
 ^T swapRemove(this ListRef<T Type>, index Int) mut => this._value!swapRemove(index._value);
 (this ListRef<T Type>)[index Int] => this._value[index._value];
+
+/// EXPERIMENT (LangArena zane-vs-c): a String holding the bytes of `bytes`.
+String(bytes List<U8>) => String(bytes._value:text());
