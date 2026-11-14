@@ -44,6 +44,18 @@ T remove(this List<T Type>, index Int) mut => this._value!remove(index._value);
 /// which moves one element whatever the index, but does not keep the order.
 T swapRemove(this List<T Type>, index Int) mut => this._value!swapRemove(index._value);
 (this List<T Type>)[index Int] => this._value[index._value];
+/// EXPERIMENT (LangArena zane-vs-goose): `count` elements of `from`, from
+/// its element `start`, copied onto the end, as one copy. For elements
+/// that own no blocks.
+Unit appendRange(this List<T Type>, from List<T>, start Int, count Int) mut {
+	this._value!appendRange(from._value, start._value, count._value);
+	return Unit();
+}
+/// As `appendRange`, of the list's own elements.
+Unit appendOwn(this List<T Type>, start Int, count Int) mut {
+	this._value!appendOwn(start._value, count._value);
+	return Unit();
+}
 
 
 // ListRef
