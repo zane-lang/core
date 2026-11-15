@@ -1,4 +1,4 @@
-zane-version v0.25
+zane-version v0.37
 version-pattern v*.+
 
 deps [
