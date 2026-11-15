@@ -306,6 +306,17 @@ Unit main() {
 	console!check(nums[Int(1)] == 1 and nums[Int(2)] == 2 and nums[Int(3)] == 2 and nums[Int(5)] == 3);
 	abc!sort();
 	console!check(String(abc) == "abc");
+	// Bytes sort unsigned: 128 and 255 come after 127.
+	mixed List<U8> = List(U8);
+	mixed!push(U8(255));
+	mixed!push(U8(1));
+	mixed!push(U8(128));
+	mixed!push(U8(0));
+	mixed!push(U8(127));
+	mixed!sort();
+	console!check(mixed[Int(1)] == 0 and mixed[Int(2)] == 1 and mixed[Int(3)] == 127);
+	console!check(mixed[Int(4)] == 128 and mixed[Int(5)] == 255);
+	console!check(mixed[Int(1)] < 1 and 127 < mixed[Int(4)] and ~(mixed[Int(5)] < 255));
 	console!check(nums:sameRange(Int(4), tail, Int(3), Int(1)) and ~nums:sameRange(Int(4), tail, Int(1), Int(2)));
 	console!check(nums:hashRange(Int(2), Int(2)) == nums:hashRange(Int(2), Int(2)));
 	console!check(nums:hashRange(Int(4), Int(1)) == tail:hashRange(Int(1), Int(1)));

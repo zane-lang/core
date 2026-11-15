@@ -162,6 +162,8 @@ Bool ==(left U8, right U8) => Bool(@operators$equal(left._value, right._value));
 Bool <(left U8, right U8) => Bool(@operators$lessThan(left._value, right._value));
 Bool ==(left U8, right @concepts$Int) => left == U8(right);
 Bool ==(left @concepts$Int, right U8) => U8(left) == right;
+Bool <(left U8, right @concepts$Int) => left < U8(right);
+Bool <(left @concepts$Int, right U8) => U8(left) < right;
 
 
 // F32
