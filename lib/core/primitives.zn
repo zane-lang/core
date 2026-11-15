@@ -257,3 +257,12 @@ Float?Unit parseFloat(this String) {
 	}
 	return Float(value);
 }
+
+/// EXPERIMENT (LangArena zane-vs-goose): `parseFloat` on the `count` bytes
+/// from byte `start`, counted from 1 as `byteAt` counts.
+Float?Unit parseFloat(this String, start Int, count Int) {
+	value @primitives$F64 = this._value:parseF64At(start._value, count._value) ? e {
+		abort Unit();
+	}
+	return Float(value);
+}
