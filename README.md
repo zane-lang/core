@@ -49,7 +49,7 @@ Unit main() {
 |---|---|
 | [`primitives.zn`](lib/core/primitives.zn) | `Unit`, `Bool`, `Int`, `Float`, `String`, and the narrow scalars `I32` and `F32` (compact storage; `Int` and `Float` stay the defaults), with their operators and conversions |
 | [`controlflow.zn`](lib/core/controlflow.zn) | `if`, `elif`, `else`, `guard`, `do`, and the counting loop `to` |
-| [`containers.zn`](lib/core/containers.zn) | `Array` and `List` (values), `ArrayRef` and `ListRef` (for owners that must stay in place) |
+| [`containers.zn`](lib/core/containers.zn) | `Array` and `List` (values; `List(n, value)` makes `n` copies of `value` in one block), `ArrayRef` and `ListRef` (for owners that must stay in place) |
 | [`console.zn`](lib/core/console.zn) | `Console`, which prints |
 | [`runtime.zn`](lib/core/runtime.zn) | `Runtime`: the program's command-line `arguments` and its thread count |
 | [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int` and `I32`; the float functions also over `F32` |
