@@ -62,6 +62,15 @@ Unit appendOwn(this List<T Type>, start Int, count Int) mut {
 	this._value!appendOwn(start._value, count._value);
 	return Unit();
 }
+/// EXPERIMENT (LangArena zane-vs-goose): whether `count` elements from
+/// `start` are the same as `count` of `other` from `otherStart`, as one
+/// comparison of their bytes. For lists of integers.
+Bool sameRange(this List<T Type>, start Int, other List<T>, otherStart Int, count Int) =>
+	Int(this._value:sameRange(start._value, other._value, otherStart._value, count._value)) == Int(1);
+/// EXPERIMENT (LangArena zane-vs-goose): a hash of `count` elements from
+/// `start`, read a word at a time; equal ranges hash alike within a run.
+/// For lists of integers.
+Int hashRange(this List<T Type>, start Int, count Int) => Int(this._value:hashRange(start._value, count._value));
 
 
 // ListRef
