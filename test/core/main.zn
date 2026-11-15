@@ -272,6 +272,59 @@ Unit main() {
 	console!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
 	console!check(String(big) == "2147483647");
 
+	// U8 (experiment): a byte that widens without its sign.
+	byte U8 = U8(200);
+	console!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
+	console!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
+	console!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
+	bytes List<U8> = List(U8);
+	b Int = Int(0);
+	b!to(Int(299)) {
+		bytes!push(U8.wrap(b));
+	}
+	console!check(bytes:size() == 300 and Int(bytes[Int(256)]) == 255 and Int(bytes[Int(258)]) == 1);
+	word String = String("héllo");
+	console!check(word:byteCount() == 6 and Int(word:byteAt(Int(1))) == 104 and Int(word:byteAt(Int(2))) == 195);
+	abc List<U8> = List(U8);
+	abc!push(U8(97));
+	abc!push(U8(98));
+	abc!push(U8(99));
+	console!check(String(abc) == "abc" and String(List(U8)) == "");
+
+	// Ranges of a List (experiment): appended in one copy, sorted, compared
+	// and hashed; and a float read from a range of a string's bytes.
+	nums List<Int> = List(Int);
+	nums!push(Int(1));
+	nums!push(Int(2));
+	nums!push(Int(3));
+	nums!appendOwn(Int(2), Int(2));
+	console!check(nums:size() == 5 and nums[Int(4)] == 2 and nums[Int(5)] == 3);
+	tail List<Int> = List(Int);
+	tail!appendRange(nums, Int(3), Int(3));
+	console!check(tail:size() == 3 and tail[Int(1)] == 3 and tail[Int(2)] == 2 and tail[Int(3)] == 3);
+	nums!sort();
+	console!check(nums[Int(1)] == 1 and nums[Int(2)] == 2 and nums[Int(3)] == 2 and nums[Int(5)] == 3);
+	abc!sort();
+	console!check(String(abc) == "abc");
+	// Bytes sort unsigned: 128 and 255 come after 127.
+	mixed List<U8> = List(U8);
+	mixed!push(U8(255));
+	mixed!push(U8(1));
+	mixed!push(U8(128));
+	mixed!push(U8(0));
+	mixed!push(U8(127));
+	mixed!sort();
+	console!check(mixed[Int(1)] == 0 and mixed[Int(2)] == 1 and mixed[Int(3)] == 127);
+	console!check(mixed[Int(4)] == 128 and mixed[Int(5)] == 255);
+	console!check(mixed[Int(1)] < 1 and 127 < mixed[Int(4)] and ~(mixed[Int(5)] < 255));
+	console!check(nums:sameRange(Int(4), tail, Int(3), Int(1)) and ~nums:sameRange(Int(4), tail, Int(1), Int(2)));
+	console!check(nums:hashRange(Int(2), Int(2)) == nums:hashRange(Int(2), Int(2)));
+	console!check(nums:hashRange(Int(4), Int(1)) == tail:hashRange(Int(1), Int(1)));
+	line String = String("x,4.35,-0.125,");
+	console!check((line:parseFloat(Int(3), Int(4)) ?? Float(0.0)) == 4.35);
+	console!check((line:parseFloat(Int(8), Int(6)) ?? Float(0.0)) == ~Float(0.125));
+	console!check((line:parseFloat(Int(1), Int(2)) ?? Float(1.5)) == 1.5);
+
 	fl F32 = F32(1.5);
 	console!check(fl + 2.0 == 3.5 and 2.0 + fl == 3.5);
 	console!check(fl * F32(2.0) == 3.0 and fl * 2.0 == 3.0 and 2.0 * fl == 3.0);
