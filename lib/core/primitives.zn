@@ -268,3 +268,20 @@ Float?Unit parseFloat(this String, start Int, count Int) {
 	}
 	return Float(value);
 }
+
+/// EXPERIMENT (LangArena zane-vs-goose): the first of the `count`
+/// positions from `from` (counted from 0) whose byte is in the set `first`
+/// and the byte `gap` after it in `second`, or -1. Each set is 288 bytes:
+/// 1 for each byte in it, then the runtime's tables (runtime/block.c).
+Int findPair(this String, from Int, count Int, first List<U8>, gap Int, second List<U8>) =>
+	Int(this._value:findPair(from._value, count._value, first._value, gap._value, second._value));
+
+/// EXPERIMENT (LangArena zane-vs-goose): the first of the `count`
+/// positions from `from` (counted from 0) whose byte is in `set`, a set as
+/// `findPair` takes, or -1.
+Int findAny(this String, from Int, count Int, set List<U8>) =>
+	Int(this._value:findAny(from._value, count._value, set._value));
+
+/// EXPERIMENT (LangArena zane-vs-goose): a hash of the string's bytes,
+/// taken eight at a time, the same for equal strings within one run.
+Int hashBytes(this String) => Int(this._value:hashBytes());
