@@ -57,6 +57,6 @@ type Duration = struct {
 	_nanoseconds Int;
 }
 Duration.nanoseconds(count Int) => init{ _nanoseconds = count; }
-Duration.milliseconds(count Int) => init{ _nanoseconds = count * Int(1000000); }
-Duration.seconds(count Int) => init{ _nanoseconds = count * Int(1000000000); }
+Duration.milliseconds(count Int) => init{ _nanoseconds = count * 1000000; }
+Duration.seconds(count Int) => init{ _nanoseconds = count * 1000000000; }
 Int nanoseconds(this Duration) => this._nanoseconds;

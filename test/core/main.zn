@@ -334,15 +334,15 @@ Unit main() {
 	commaFlags List<Bool> = List(Bool);
 	dashFlags List<Bool> = List(Bool);
 	flagByte Int = Int(0);
-	flagByte!to(Int(255)) {
+	flagByte!to(255) {
 		commaFlags!push(flagByte == 44);
 		dashFlags!push(flagByte == 45);
 	}
 	commas ByteSet = commaFlags:byteSet();
 	dashes ByteSet = dashFlags:byteSet();
-	console!check(line:findAny(Int(1), line:byteCount(), commas) == 2 and line:findAny(Int(3), Int(4), commas) == 0);
-	console!check(line:findAny(Int(8), Int(7), commas) == 14);
-	console!check(line:findPair(Int(1), Int(13), commas, Int(1), dashes) == 7 and line:findPair(Int(1), Int(6), commas, Int(1), dashes) == 0);
+	console!check(line:findAny(1, line:byteCount(), commas) == 2 and line:findAny(3, 4, commas) == 0);
+	console!check(line:findAny(8, 7, commas) == 14);
+	console!check(line:findPair(1, 13, commas, 1, dashes) == 7 and line:findPair(1, 6, commas, 1, dashes) == 0);
 	console!check(line:hashBytes() == (String("x,4.35,") + String("-0.125,")):hashBytes());
 
 	fl F32 = F32(1.5);
