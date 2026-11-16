@@ -34,6 +34,13 @@ type Jar = #struct {
 }
 Jar(beans Int) => init{ beans; }
 
+/// A worker's state: steps taken, up to a limit.
+type Steps = struct {
+	taken Int;
+	limit Int;
+}
+Steps(limit Int) => init{ taken = Int(0); limit; }
+
 Unit printUnlessStopped(this Console, stop Bool) mut {
 	do() {
 		guard(stop);
@@ -364,6 +371,42 @@ Unit main() {
 	console!check(Float(139968) == 139968.0 and Float(2.5) == 2.5);
 	console!check(String(5) == "5" and String(2.5) == "2.5");
 	console!check(Int(3) == 3 and I32(3) == 3);
+
+	// Workers: a step run until it returns false, with and without a wait,
+	// and spawned.
+	steps Steps(5);
+	steps!work(Bool(this Steps) mut {
+		this.taken = this.taken + 1;
+		return this.taken < this.limit;
+	});
+	console!check(steps.taken == 5);
+	once Steps(0);
+	once!work(Bool(this Steps) mut {
+		this.taken = this.taken + 1;
+		return Bool(false);
+	});
+	console!check(once.taken == 1);
+	ticks Steps(3);
+	ticks!setInterval(Duration.milliseconds(1), Bool(this Steps) mut {
+		this.taken = this.taken + 1;
+		return this.taken < this.limit;
+	});
+	console!check(ticks.taken == 3);
+	console!check(Duration.seconds(2):nanoseconds() == 2000000000);
+	console!check(Duration.milliseconds(16):nanoseconds() == 16000000);
+	console!check(Duration.nanoseconds(7):nanoseconds() == 7);
+	spawnedTaken Int = Int(0);
+	do() {
+		spawned Steps(4);
+		do() {
+			spawn spawned!work(Bool(this Steps) mut {
+				this.taken = this.taken + 1;
+				return this.taken < this.limit;
+			});
+		}
+		spawnedTaken = spawned.taken;
+	}
+	console!check(spawnedTaken == 4);
 
 	return Unit();
 }

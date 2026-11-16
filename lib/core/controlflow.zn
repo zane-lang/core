@@ -35,3 +35,28 @@ Unit to(this Int, end Int, body @concepts$Block) mut {
 	});
 	return Unit();
 }
+
+/// Runs a worker (control-flow.md §3.7): calls `step` on this subject, and
+/// again each time it returns `true`, until it returns `false`. A method
+/// for a subject of any type; it takes no block, so it may be spawned.
+Unit work(this S Type, step Bool[this S] mut) mut {
+	@controlflow$work(this, step);
+	return Unit();
+}
+
+/// Runs a worker as `work` does, waiting `every` between one step and the
+/// next; it does not wait before the first.
+Unit setInterval(this S Type, every Duration, step Bool[this S] mut) mut {
+	@controlflow$workEvery(this, every._nanoseconds._value, step);
+	return Unit();
+}
+
+// Duration
+/// A span of time, a whole number of nanoseconds (types.md §2.6).
+type Duration = struct {
+	_nanoseconds Int;
+}
+Duration.nanoseconds(count Int) => init{ _nanoseconds = count; }
+Duration.milliseconds(count Int) => init{ _nanoseconds = count * Int(1000000); }
+Duration.seconds(count Int) => init{ _nanoseconds = count * Int(1000000000); }
+Int nanoseconds(this Duration) => this._nanoseconds;
