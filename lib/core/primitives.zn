@@ -268,3 +268,31 @@ Float?Unit parseFloat(this String, start Int, count Int) {
 	}
 	return Float(value);
 }
+
+/// A set of bytes, made from 256 flags by `byteSet`, which `findAny` and
+/// `findPair` search a string for.
+type ByteSet = struct {
+	_value @primitives$List<@primitives$U8>;
+}
+ByteSet(v @primitives$List<@primitives$U8>) => init{
+	_value = v;
+}
+
+/// The set of the bytes whose flags hold: byte `b`'s flag is the list's
+/// element `b + 1`. The list holds 256 flags.
+ByteSet byteSet(this List<Bool>) => ByteSet(this._value:byteSet());
+
+/// The first of the `count` positions from `from`, counted from 1 as
+/// `byteAt` counts, whose byte is in `first` and the byte `gap` after it in
+/// `second`, or 0 when there is none.
+Int findPair(this String, from Int, count Int, first ByteSet, gap Int, second ByteSet) =>
+	Int(this._value:findPair(from._value, count._value, first._value, gap._value, second._value));
+
+/// The first of the `count` positions from `from`, counted from 1, whose
+/// byte is in `set`, or 0 when there is none.
+Int findAny(this String, from Int, count Int, set ByteSet) =>
+	Int(this._value:findAny(from._value, count._value, set._value));
+
+/// A hash of the string's bytes, the same for equal strings within one
+/// run of the program and not specified beyond that.
+Int hashBytes(this String) => Int(this._value:hashBytes());
