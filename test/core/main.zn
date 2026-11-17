@@ -279,7 +279,7 @@ Unit main() {
 	console!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
 	console!check(String(big) == "2147483647");
 
-	// U8 (experiment): a byte that widens without its sign.
+	// U8: a byte that widens without its sign.
 	byte U8 = U8(200);
 	console!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
 	console!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
@@ -298,8 +298,9 @@ Unit main() {
 	abc!push(U8(99));
 	console!check(String(abc) == "abc" and String(List(U8)) == "");
 
-	// Ranges of a List (experiment): appended in one copy, sorted, compared
-	// and hashed; and a float read from a range of a string's bytes.
+	// Ranges of a List: appended in one copy, compared and hashed; sorted
+	// (experiment); and a float read from a range of a string's bytes
+	// (experiment).
 	nums List<Int> = List(Int);
 	nums!push(Int(1));
 	nums!push(Int(2));

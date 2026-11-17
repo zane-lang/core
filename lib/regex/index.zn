@@ -1,0 +1,113 @@
+package regex;
+
+import core$;
+import math$;
+
+// The index of a DFA's states by their keys, while the DFA is built: open
+// addressing over a power of two slots, each key a range of one byte list
+// that every key is appended to, hashed and compared a word at a time.
+
+type _Slot = struct {
+	start I32;
+	length I32;
+	value I32;
+}
+_Slot(start I32, length I32, value I32) => init{
+	start;
+	length;
+	value;
+}
+
+type _Index = struct {
+	slots List<_Slot>;
+	entries Int;
+	shift Int;
+}
+
+// The bits of a table with a power of two slots, at least `capacity`.
+Int _tableBits(capacity Int) {
+	bits Int = Int(1);
+	bits!to(Int(62)) {
+		if(shiftLeft(Int(1), bits) >= capacity) {
+			return bits;
+		}
+	}
+	return Int(62);
+}
+
+_Index(capacity Int) => init{
+	slots = List(shiftLeft(Int(1), _tableBits(capacity)), _Slot(I32(0), I32(0), I32(0)));
+	entries = Int(0);
+	shift = Int(64) - _tableBits(capacity);
+}
+
+// The slot that holds the key with the bytes of `count` of `from` from
+// `start`, the keys being ranges of `keys`, or the empty slot where it
+// belongs; 0 if the table is full. An empty slot's start is 0.
+Int slotIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
+	capacity Int = this.slots:size();
+	index Int = shiftRightLogical(from:hashRange(start, count) * (Int(0) - Int(7046029254386353131)), this.shift) + 1;
+	probe Int = Int(1);
+	probe!to(capacity) {
+		slot _Slot = this.slots[index];
+		if(Int(slot.start) == 0) {
+			return index;
+		}
+		// `and` evaluates both sides: the bytes are compared only for a
+		// key of the same length.
+		if(Int(slot.length) == count) {
+			if(keys:sameRange(Int(slot.start), from, start, count)) {
+				return index;
+			}
+		}
+		index = index + 1;
+		if(index > capacity) {
+			index = Int(1);
+		}
+	}
+	return Int(0);
+}
+
+// The value of the key with the bytes of `count` of `from` from `start`,
+// or -1 when there is none.
+Int findIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
+	index Int = this:slotIn(keys, from, start, count);
+	if(index == 0) {
+		return Int(0) - Int(1);
+	}
+	slot _Slot = this.slots[index];
+	if(Int(slot.start) == 0) {
+		return Int(0) - Int(1);
+	}
+	return Int(slot.value);
+}
+
+// The table doubled, each key placed again, once it is two thirds full.
+Unit grow(this _Index, keys List<U8>) mut {
+	old List<_Slot> = this.slots;
+	this.slots = List(old:size() * 2, _Slot(I32(0), I32(0), I32(0)));
+	this.shift = this.shift - 1;
+	i Int = Int(1);
+	i!to(old:size()) {
+		slot _Slot = old[i];
+		if(Int(slot.start) ~= 0) {
+			this.slots[this:slotIn(keys, keys, Int(slot.start), Int(slot.length))] = slot;
+		}
+	}
+	return Unit();
+}
+
+// `count` bytes of `keys` from `start` made a key with `value`.
+Unit put(this _Index, keys List<U8>, start Int, count Int, value Int) mut {
+	if((this.entries + 1) * 3 > this.slots:size() * 2) {
+		this!grow(keys);
+	}
+	index Int = this:slotIn(keys, keys, start, count);
+	if(index > 0) {
+		if(Int(this.slots[index].start) == 0) {
+			this.entries = this.entries + 1;
+		}
+		this.slots[index] = _Slot(I32.wrap(start), I32.wrap(count), I32.wrap(value));
+	}
+	return Unit();
+}

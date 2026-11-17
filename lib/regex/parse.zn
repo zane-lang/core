@@ -1,0 +1,933 @@
+package regex;
+
+import core$;
+import math$;
+
+// The pattern being parsed and compiled: its syntax tree, its byte sets
+// and its program, the DFA being built, and the first error found.
+type _Builder = #struct {
+	pattern String;
+	at Int;
+	// The flags in force: `i`, `m` and `s`.
+	insensitive Bool;
+	multiline Bool;
+	dotAll Bool;
+	failed Bool;
+	message String;
+	errorAt Int;
+	groups Int;
+	names List<String>;
+	// A counted repeat's bounds, as `quantifier` read them.
+	low Int;
+	high Int;
+	// Nodes: kind 1 empty, 2 a byte of set `one`, 3 `one` then `two`, 4
+	// `one` or else `two`, 5 `one` repeated `low` to `high` times (high -1:
+	// no end), greedily or not, 6 `one` captured as group `two`, 7 the
+	// assertion `one` (_assertions).
+	kinds List<Int>;
+	ones List<Int>;
+	twos List<Int>;
+	lows List<Int>;
+	highs List<Int>;
+	greedy List<Bool>;
+	// Which assertions the pattern holds, by kind.
+	asserts List<Bool>;
+	// Byte sets, 256 to a set: byte b of set k at (k-1)*256+b+1.
+	sets List<Bool>;
+	// Instructions: op 0 match, 1 a byte of set `x` then `y`, 2 split to `x`
+	// first and `y` second, 3 the assertion `x` then `y`, 4 save the
+	// position in slot `x` (from 0) then `y`.
+	ops List<Int>;
+	xs List<Int>;
+	ys List<Int>;
+	// Emitting a part whose assertions are only skipped over.
+	loose Bool;
+	// The DFA being built. Each state's kernel, the instructions its last
+	// byte led to, back to back, where each starts, its context and
+	// whether a match ended before its last byte; its key and the index of
+	// the keys, and the transitions found so far.
+	classes List<I32>;
+	reps List<Int>;
+	lists List<Int>;
+	bounds List<Int>;
+	contexts List<Int>;
+	matching List<Bool>;
+	keys List<U8>;
+	index _Index;
+	trans List<Int>;
+	// The DFA's assertions' needs: whether a context tells the start of
+	// the text, the start of a line, and a word byte before.
+	needStart Bool;
+	needLine Bool;
+	needWord Bool;
+	overflow Bool;
+	// The closure being found: its byte instructions in priority order,
+	// whether it reached a match, and the round that marks what it saw.
+	list List<Int>;
+	matched Bool;
+	seen List<Int>;
+	round Int;
+	kernel List<Int>;
+	marks List<Int>;
+	markRound Int;
+	// The analysis's scratch: a byte set, and the pattern's top-level items.
+	acc List<Bool>;
+	items List<Int>;
+}
+
+_Builder(pattern String) => init{
+	pattern;
+	at = Int(1);
+	insensitive = Bool(false);
+	multiline = Bool(false);
+	dotAll = Bool(false);
+	failed = Bool(false);
+	message = String("");
+	errorAt = Int(0);
+	groups = Int(0);
+	names = List(String);
+	low = Int(0);
+	high = Int(0);
+	kinds = List(Int);
+	ones = List(Int);
+	twos = List(Int);
+	lows = List(Int);
+	highs = List(Int);
+	greedy = List(Bool);
+	asserts = List(Int(6), Bool(false));
+	sets = List(Bool);
+	ops = List(Int);
+	xs = List(Int);
+	ys = List(Int);
+	loose = Bool(false);
+	classes = List(I32);
+	reps = List(Int);
+	lists = List(Int);
+	bounds = List(Int);
+	contexts = List(Int);
+	matching = List(Bool);
+	keys = List(U8);
+	index = _Index(Int(16));
+	trans = List(Int);
+	needStart = Bool(false);
+	needLine = Bool(false);
+	needWord = Bool(false);
+	overflow = Bool(false);
+	list = List(Int);
+	matched = Bool(false);
+	seen = List(Int);
+	round = Int(0);
+	kernel = List(Int);
+	marks = List(Int);
+	markRound = Int(0);
+	acc = List(Bool);
+	items = List(Int);
+}
+
+Int _none() => Int(0) - Int(1);
+
+// The first error, at the pattern's position.
+Unit fail(this _Builder, message String) mut {
+	if(~this.failed) {
+		this.failed = Bool(true);
+		this.message = message;
+		this.errorAt = this.at;
+	}
+	return Unit();
+}
+
+// --- parsing ---------------------------------------------------------------
+
+// The next byte of the pattern, or -1 past its end.
+Int peek(this _Builder) {
+	if(this.at > this.pattern:byteCount()) {
+		return _none();
+	}
+	return Int(this.pattern:byteAt(this.at));
+}
+
+Int peekAt(this _Builder, ahead Int) {
+	if(this.at + ahead > this.pattern:byteCount()) {
+		return _none();
+	}
+	return Int(this.pattern:byteAt(this.at + ahead));
+}
+
+Unit skip(this _Builder) mut {
+	this.at = this.at + 1;
+	return Unit();
+}
+
+Int node(this _Builder, kind Int, one Int, two Int, low Int, high Int, greedy Bool) mut {
+	k Int = kind;
+	this.kinds!push(k);
+	a Int = one;
+	this.ones!push(a);
+	b Int = two;
+	this.twos!push(b);
+	l Int = low;
+	this.lows!push(l);
+	h Int = high;
+	this.highs!push(h);
+	g Bool = greedy;
+	this.greedy!push(g);
+	return this.kinds:size();
+}
+
+Int empty(this _Builder) mut => this!node(Int(1), Int(0), Int(0), Int(0), Int(0), Bool(true));
+
+Int byteNode(this _Builder, set Int) mut => this!node(Int(2), set, Int(0), Int(0), Int(0), Bool(true));
+
+Int assertion(this _Builder, kind Int) mut {
+	this.asserts[kind] = Bool(true);
+	return this!node(Int(7), kind, Int(0), Int(0), Int(0), Bool(true));
+}
+
+Int newSet(this _Builder) mut {
+	i Int = Int(1);
+	i!to(Int(256)) {
+		this.sets!push(Bool(false));
+	}
+	return this.sets:size() / 256;
+}
+
+Unit addRange(this _Builder, set Int, low Int, high Int) mut {
+	b Int = low;
+	b!to(high) {
+		this.sets[(set - 1) * 256 + b + 1] = Bool(true);
+	}
+	return Unit();
+}
+
+Bool has(this _Builder, set Int, b Int) => this.sets[(set - 1) * 256 + b + 1];
+
+// Every byte of set `other` added to set `set`.
+Unit addSet(this _Builder, set Int, other Int) mut {
+	b Int = Int(0);
+	b!to(Int(255)) {
+		if(this:has(other, b)) {
+			this.sets[(set - 1) * 256 + b + 1] = Bool(true);
+		}
+	}
+	return Unit();
+}
+
+// The other case of every ASCII letter in the set added.
+Unit fold(this _Builder, set Int) mut {
+	b Int = Int(65);
+	b!to(Int(90)) {
+		if(this:has(set, b) or this:has(set, b + 32)) {
+			this.sets[(set - 1) * 256 + b + 1] = Bool(true);
+			this.sets[(set - 1) * 256 + b + 33] = Bool(true);
+		}
+	}
+	return Unit();
+}
+
+Unit invert(this _Builder, set Int) mut {
+	b Int = Int(0);
+	b!to(Int(255)) {
+		this.sets[(set - 1) * 256 + b + 1] = ~this:has(set, b);
+	}
+	return Unit();
+}
+
+// A named class's bytes added: 1 digit, 2 alpha, 3 alnum, 4 word, 5
+// space, 6 upper, 7 lower, 8 punct, 9 xdigit, 10 cntrl, 11 print, 12
+// graph, 13 blank, 14 ascii.
+Unit addClass(this _Builder, set Int, which Int) mut {
+	if(which == 1 or which == 3 or which == 4 or which == 9) {
+		this!addRange(set, Int(48), Int(57));
+	}
+	if(which == 2 or which == 3 or which == 4 or which == 6) {
+		this!addRange(set, Int(65), Int(90));
+	}
+	if(which == 2 or which == 3 or which == 4 or which == 7) {
+		this!addRange(set, Int(97), Int(122));
+	}
+	if(which == 4) {
+		this!addRange(set, Int(95), Int(95));
+	}
+	if(which == 5) {
+		this!addRange(set, Int(9), Int(13));
+		this!addRange(set, Int(32), Int(32));
+	}
+	if(which == 8) {
+		this!addRange(set, Int(33), Int(47));
+		this!addRange(set, Int(58), Int(64));
+		this!addRange(set, Int(91), Int(96));
+		this!addRange(set, Int(123), Int(126));
+	}
+	if(which == 9) {
+		this!addRange(set, Int(65), Int(70));
+		this!addRange(set, Int(97), Int(102));
+	}
+	if(which == 10) {
+		this!addRange(set, Int(0), Int(31));
+		this!addRange(set, Int(127), Int(127));
+	}
+	if(which == 11) {
+		this!addRange(set, Int(32), Int(126));
+	}
+	if(which == 12) {
+		this!addRange(set, Int(33), Int(126));
+	}
+	if(which == 13) {
+		this!addRange(set, Int(9), Int(9));
+		this!addRange(set, Int(32), Int(32));
+	}
+	if(which == 14) {
+		this!addRange(set, Int(0), Int(127));
+	}
+	return Unit();
+}
+
+// The class of an escape's letter, \d \w \s and their capitals: its
+// number for addClass, negative for a capital; 0 for any other letter.
+Int _escapeClass(letter Int) {
+	if(letter == 100) {
+		return Int(1);
+	}
+	if(letter == 119) {
+		return Int(4);
+	}
+	if(letter == 115) {
+		return Int(5);
+	}
+	if(letter == 68) {
+		return ~Int(1);
+	}
+	if(letter == 87) {
+		return ~Int(4);
+	}
+	if(letter == 83) {
+		return ~Int(5);
+	}
+	return Int(0);
+}
+
+// The byte an escape's letter stands for: \n \t \r \f \v \a; -1 for any
+// other letter.
+Int _escapeByte(letter Int) {
+	if(letter == 110) {
+		return Int(10);
+	}
+	if(letter == 116) {
+		return Int(9);
+	}
+	if(letter == 114) {
+		return Int(13);
+	}
+	if(letter == 102) {
+		return Int(12);
+	}
+	if(letter == 118) {
+		return Int(11);
+	}
+	if(letter == 97) {
+		return Int(7);
+	}
+	return _none();
+}
+
+Bool _isDigit(b Int) => b >= 48 and b <= 57;
+
+Bool _isAlnum(b Int) => (b >= 48 and b <= 57) or (b >= 65 and b <= 90) or (b >= 97 and b <= 122);
+
+// The value of a hexadecimal digit, or -1.
+Int _hexValue(b Int) {
+	if(_isDigit(b)) {
+		return b - 48;
+	}
+	if(b >= 65 and b <= 70) {
+		return b - 55;
+	}
+	if(b >= 97 and b <= 102) {
+		return b - 87;
+	}
+	return _none();
+}
+
+// The byte of `\xHH`, from past its `x`; -1 after an error.
+Int hexEscape(this _Builder) mut {
+	high Int = _hexValue(this:peek());
+	low Int = _hexValue(this:peekAt(Int(1)));
+	if(high < 0 or low < 0) {
+		this!fail("\\x takes two hexadecimal digits");
+		return _none();
+	}
+	this!skip();
+	this!skip();
+	return high * 16 + low;
+}
+
+// A set holding the class `which` (negative: its complement). The class
+// is folded before its complement is taken, so `(?i)[[:^lower:]]` holds no
+// letter of either case.
+Int classSet(this _Builder, which Int) mut {
+	set Int = this!newSet();
+	positive Bool = if(which > 0) {
+		this!addClass(set, which);
+	}
+	positive:else() {
+		this!addClass(set, ~which);
+		folds Bool = this.insensitive;
+		if(folds) {
+			this!fold(set);
+		}
+		this!invert(set);
+	}
+	return set;
+}
+
+// A set of one byte, of both its cases where folded.
+Int literal(this _Builder, b Int) mut {
+	set Int = this!newSet();
+	this!addRange(set, b, b);
+	folds Bool = this.insensitive;
+	if(folds) {
+		this!fold(set);
+	}
+	return set;
+}
+
+// A POSIX class, `[:name:]` or `[:^name:]`, from its `[`, added to `set`.
+Unit parsePosix(this _Builder, set Int) mut {
+	this!skip();
+	this!skip();
+	negated Bool = this:peek() == 94;
+	if(negated) {
+		this!skip();
+	}
+	start Int = this.at;
+	k Int = Int(1);
+	k!to(Int(8)) {
+		c Int = this:peek();
+		guard(c < 97 or c > 122);
+		this!skip();
+	}
+	if(this:peek() ~= 58 or this:peekAt(Int(1)) ~= 93) {
+		this!fail("a POSIX class is written [:name:]");
+		return Unit();
+	}
+	name String = _slice(this.pattern, start - 1, this.at - 1);
+	this!skip();
+	this!skip();
+	which Int = Int(0);
+	if(name == "digit") {
+		which = Int(1);
+	}
+	if(name == "alpha") {
+		which = Int(2);
+	}
+	if(name == "alnum") {
+		which = Int(3);
+	}
+	if(name == "word") {
+		which = Int(4);
+	}
+	if(name == "space") {
+		which = Int(5);
+	}
+	if(name == "upper") {
+		which = Int(6);
+	}
+	if(name == "lower") {
+		which = Int(7);
+	}
+	if(name == "punct") {
+		which = Int(8);
+	}
+	if(name == "xdigit") {
+		which = Int(9);
+	}
+	if(name == "cntrl") {
+		which = Int(10);
+	}
+	if(name == "print") {
+		which = Int(11);
+	}
+	if(name == "graph") {
+		which = Int(12);
+	}
+	if(name == "blank") {
+		which = Int(13);
+	}
+	if(name == "ascii") {
+		which = Int(14);
+	}
+	if(which == 0) {
+		this.at = start;
+		this!fail("unknown POSIX class [:" + name + ":]");
+		return Unit();
+	}
+	if(negated) {
+		which = ~which;
+	}
+	other Int = this!classSet(which);
+	this!addSet(set, other);
+	return Unit();
+}
+
+// One item of a class: the byte it stands for, or -1 where it was a
+// named class, added to `set`; -1 after an error.
+Int classByte(this _Builder, set Int) mut {
+	c Int = this:peek();
+	this!skip();
+	if(c ~= 92) {
+		return c;
+	}
+	e Int = this:peek();
+	if(e < 0) {
+		this!fail("the pattern ends in an escape");
+		return _none();
+	}
+	this!skip();
+	which Int = _escapeClass(e);
+	if(which ~= 0) {
+		other Int = this!classSet(which);
+		this!addSet(set, other);
+		return _none();
+	}
+	if(e == 120) {
+		return this!hexEscape();
+	}
+	b Int = _escapeByte(e);
+	if(b >= 0) {
+		return b;
+	}
+	if(_isAlnum(e)) {
+		this!fail("unknown escape in a class");
+		return _none();
+	}
+	return e;
+}
+
+// A class, from past its `[` to past its `]`.
+Int parseClass(this _Builder) mut {
+	set Int = this!newSet();
+	negated Bool = this:peek() == 94;
+	if(negated) {
+		this!skip();
+	}
+	first Bool = Bool(true);
+	k Int = Int(1);
+	k!to(this.pattern:byteCount() + 1) {
+		if(this.failed) {
+			return set;
+		}
+		c Int = this:peek();
+		if(c < 0) {
+			this!fail("a class is not closed");
+			return set;
+		}
+		if(c == 93 and ~first) {
+			this!skip();
+			folds Bool = this.insensitive;
+			if(folds) {
+				this!fold(set);
+			}
+			if(negated) {
+				this!invert(set);
+			}
+			return set;
+		}
+		first = Bool(false);
+		posix Bool = c == 91 and this:peekAt(Int(1)) == 58;
+		item Bool = if(posix) {
+			this!parsePosix(set);
+		}
+		item:else() {
+			low Int = this!classByte(set);
+			if(low >= 0) {
+				ranged Bool = if(this:peek() == 45 and this:peekAt(Int(1)) ~= 93 and this:peekAt(Int(1)) >= 0) {
+					this!skip();
+					high Int = this!classByte(set);
+					if(~this.failed) {
+						if(high < 0) {
+							this!fail("a range ends in a byte, not a class");
+						}
+						if(high >= 0 and high < low) {
+							this!fail("a range's end is below its start");
+						}
+						if(high >= low) {
+							this!addRange(set, low, high);
+						}
+					}
+				}
+				ranged:else() {
+					this!addRange(set, low, low);
+				}
+			}
+		}
+	}
+	return set;
+}
+
+// A group, from past its `(`: capturing, named, non-capturing, or one
+// that sets flags.
+Int parseGroup(this _Builder) mut {
+	insensitive Bool = this.insensitive;
+	multiline Bool = this.multiline;
+	dotAll Bool = this.dotAll;
+	capture Bool = Bool(true);
+	name String = String("");
+	if(this:peek() == 63) {
+		next Int = this:peekAt(Int(1));
+		after Int = this:peekAt(Int(2));
+		named Bool = (next == 60 and after ~= 61 and after ~= 33) or (next == 80 and after == 60);
+		if(named) {
+			this!skip();
+			if(next == 80) {
+				this!skip();
+			}
+			this!skip();
+			start Int = this.at;
+			k Int = Int(1);
+			k!to(this.pattern:byteCount()) {
+				c Int = this:peek();
+				guard(~_isAlnum(c) and c ~= 95);
+				this!skip();
+			}
+			if(this:peek() ~= 62 or this.at == start or _isDigit(this:peekAt(start - this.at))) {
+				this.at = start;
+				this!fail("a group's name is letters, digits and _, not starting with a digit, then >");
+				return this!empty();
+			}
+			name = _slice(this.pattern, start - 1, this.at - 1);
+			this!skip();
+			i Int = Int(1);
+			i!to(this.names:size()) {
+				if(this.names[i] == name) {
+					this!fail("two groups are named " + name);
+				}
+			}
+		}
+		if(~named) {
+			this!skip();
+			on Bool = Bool(true);
+			k Int = Int(1);
+			k!to(this.pattern:byteCount()) {
+				guard(this.failed);
+				c Int = this:peek();
+				if(c == 41) {
+					// (?flags): they hold to the end of the enclosing group.
+					this!skip();
+					return this!empty();
+				}
+				if(c == 58) {
+					this!skip();
+					capture = Bool(false);
+					// The body follows.
+					return this!groupBody(capture, name, insensitive, multiline, dotAll);
+				}
+				known Bool = Bool(false);
+				if(c == 105) {
+					this.insensitive = on;
+					known = Bool(true);
+				}
+				if(c == 109) {
+					this.multiline = on;
+					known = Bool(true);
+				}
+				if(c == 115) {
+					this.dotAll = on;
+					known = Bool(true);
+				}
+				if(c == 45 and on) {
+					on = Bool(false);
+					known = Bool(true);
+				}
+				if(~known) {
+					if(c == 61 or c == 33 or c == 60) {
+						this!fail("look-around is not supported");
+					}
+					if(c ~= 61 and c ~= 33 and c ~= 60) {
+						this!fail("unknown group flag; the flags are i, m and s");
+					}
+					return this!empty();
+				}
+				this!skip();
+			}
+			this!fail("a group is not closed");
+			return this!empty();
+		}
+	}
+	return this!groupBody(capture, name, insensitive, multiline, dotAll);
+}
+
+// A group's body, to past its `)`, the flags then as they were before it.
+Int groupBody(this _Builder, capture Bool, name String, insensitive Bool, multiline Bool, dotAll Bool) mut {
+	number Int = Int(0);
+	if(capture) {
+		this.groups = this.groups + 1;
+		number = this.groups;
+		copy String = name;
+		this.names!push(copy);
+	}
+	inner Int = this!parseAlt();
+	if(this.failed) {
+		return inner;
+	}
+	if(this:peek() ~= 41) {
+		this!fail("a group is not closed");
+		return inner;
+	}
+	this!skip();
+	this.insensitive = insensitive;
+	this.multiline = multiline;
+	this.dotAll = dotAll;
+	if(capture) {
+		return this!node(Int(6), inner, number, Int(0), Int(0), Bool(true));
+	}
+	return inner;
+}
+
+// An escape outside a class, from its `\`.
+Int parseEscape(this _Builder) mut {
+	this!skip();
+	e Int = this:peek();
+	if(e < 0) {
+		this!fail("the pattern ends in an escape");
+		return this!empty();
+	}
+	this!skip();
+	which Int = _escapeClass(e);
+	if(which ~= 0) {
+		set Int = this!classSet(which);
+		return this!byteNode(set);
+	}
+	if(e == 98) {
+		return this!assertion(Int(5));
+	}
+	if(e == 66) {
+		return this!assertion(Int(6));
+	}
+	if(e == 65) {
+		return this!assertion(Int(1));
+	}
+	if(e == 122) {
+		return this!assertion(Int(2));
+	}
+	b Int = _escapeByte(e);
+	if(e == 120) {
+		b = this!hexEscape();
+		if(b < 0) {
+			return this!empty();
+		}
+	}
+	if(b < 0 and _isAlnum(e)) {
+		this!fail("unknown escape");
+		return this!empty();
+	}
+	if(b < 0) {
+		b = e;
+	}
+	set Int = this!literal(b);
+	return this!byteNode(set);
+}
+
+Int parseAtom(this _Builder) mut {
+	c Int = this:peek();
+	if(c == 40) {
+		this!skip();
+		return this!parseGroup();
+	}
+	if(c == 91) {
+		this!skip();
+		set Int = this!parseClass();
+		return this!byteNode(set);
+	}
+	if(c == 46) {
+		this!skip();
+		set Int = this!newSet();
+		this!addRange(set, Int(0), Int(255));
+		dotAll Bool = this.dotAll;
+		if(~dotAll) {
+			this.sets[(set - 1) * 256 + 11] = Bool(false);
+		}
+		return this!byteNode(set);
+	}
+	if(c == 94) {
+		this!skip();
+		multiline Bool = this.multiline;
+		if(multiline) {
+			return this!assertion(Int(3));
+		}
+		return this!assertion(Int(1));
+	}
+	if(c == 36) {
+		this!skip();
+		multiline Bool = this.multiline;
+		if(multiline) {
+			return this!assertion(Int(4));
+		}
+		return this!assertion(Int(2));
+	}
+	if(c == 92) {
+		return this!parseEscape();
+	}
+	this!skip();
+	set Int = this!literal(c);
+	return this!byteNode(set);
+}
+
+// A decimal number at the pattern's position, every digit of it read, or
+// -1 if none; past 1000 it reads as 1001, which no bound may be.
+Int number(this _Builder) mut {
+	n Int = _none();
+	k Int = Int(1);
+	k!to(this.pattern:byteCount() + 1) {
+		c Int = this:peek();
+		if(~_isDigit(c)) {
+			return n;
+		}
+		if(n < 0) {
+			n = Int(0);
+		}
+		n = n * 10 + c - 48;
+		if(n > 1000) {
+			n = Int(1001);
+		}
+		this!skip();
+	}
+	return n;
+}
+
+// Whether a counted repeat, `{n}`, `{n,}` or `{n,m}`, starts here; if so
+// it is read, its bounds in `low` and `high`. Otherwise nothing is read.
+Bool quantifier(this _Builder) mut {
+	if(this:peek() ~= 123) {
+		return Bool(false);
+	}
+	start Int = this.at;
+	this!skip();
+	low Int = this!number();
+	high Int = low;
+	if(low >= 0 and this:peek() == 44) {
+		this!skip();
+		high = this!number();
+	}
+	if(low < 0 or this:peek() ~= 125) {
+		this.at = start;
+		return Bool(false);
+	}
+	this!skip();
+	this.low = low;
+	this.high = high;
+	return Bool(true);
+}
+
+// Whether a repeat operator starts here, reading nothing.
+Bool repeatAhead(this _Builder) mut {
+	c Int = this:peek();
+	if(c == 42 or c == 43 or c == 63) {
+		return Bool(true);
+	}
+	start Int = this.at;
+	counted Bool = this!quantifier();
+	this.at = start;
+	return counted;
+}
+
+Int parseRepeat(this _Builder) mut {
+	if(this!repeatAhead()) {
+		this!fail("a repeat follows nothing it could repeat");
+		return this!empty();
+	}
+	atom Int = this!parseAtom();
+	if(this.failed) {
+		return atom;
+	}
+	c Int = this:peek();
+	low Int = _none();
+	high Int = _none();
+	if(c == 42) {
+		low = Int(0);
+	}
+	if(c == 43) {
+		low = Int(1);
+	}
+	if(c == 63) {
+		low = Int(0);
+		high = Int(1);
+	}
+	if(low >= 0) {
+		this!skip();
+	}
+	if(low < 0) {
+		if(~this!quantifier()) {
+			return atom;
+		}
+		low = this.low;
+		high = this.high;
+		if(high >= 0 and high < low) {
+			this!fail("a repeat's upper bound is below its lower one");
+			return atom;
+		}
+		if(low > 1000 or high > 1000) {
+			this!fail("a repeat's bounds are at most 1000");
+			return atom;
+		}
+	}
+	greedy Bool = Bool(true);
+	if(this:peek() == 63) {
+		this!skip();
+		greedy = Bool(false);
+	}
+	if(this!repeatAhead()) {
+		this!fail("a repeat is itself repeated; group it first");
+		return atom;
+	}
+	return this!node(Int(5), atom, Int(0), low, high, greedy);
+}
+
+Int parseCat(this _Builder) mut {
+	out Int = this!empty();
+	none Bool = Bool(true);
+	k Int = Int(1);
+	k!to(this.pattern:byteCount() + 1) {
+		if(this.failed) {
+			return out;
+		}
+		c Int = this:peek();
+		if(c < 0 or c == 124 or c == 41) {
+			return out;
+		}
+		item Int = this!parseRepeat();
+		first Bool = none;
+		joined Bool = if(first) {
+			out = item;
+			none = Bool(false);
+		}
+		joined:else() {
+			out = this!node(Int(3), out, item, Int(0), Int(0), Bool(true));
+		}
+	}
+	return out;
+}
+
+Int parseAlt(this _Builder) mut {
+	out Int = this!parseCat();
+	k Int = Int(1);
+	k!to(this.pattern:byteCount() + 1) {
+		if(this.failed or this:peek() ~= 124) {
+			return out;
+		}
+		this!skip();
+		other Int = this!parseCat();
+		out = this!node(Int(4), out, other, Int(0), Int(0), Bool(true));
+	}
+	return out;
+}
+
+// The bytes of `text` from position `start` to `end` (from 0, the end
+// past the last byte).
+String _slice(text String, start Int, end Int) {
+	bytes List<U8> = List(U8);
+	i Int = start + 1;
+	i!to(end) {
+		bytes!push(text:byteAt(i));
+	}
+	return String(bytes);
+}

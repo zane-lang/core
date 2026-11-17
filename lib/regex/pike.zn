@@ -1,0 +1,167 @@
+package regex;
+
+import core$;
+import math$;
+
+// The Pike VM: the NFA run on every thread at once, each thread with its
+// own groups' positions, in priority order, so the first thread to reach
+// a match has the leftmost-first match's groups.
+
+type _Pike = #struct {
+	// The next position's threads: their instructions, and their slots,
+	// `width` to a thread.
+	pcs List<Int>;
+	slots List<Int>;
+	width Int;
+	// The slots of the thread being followed.
+	current List<Int>;
+	// The round that marks what the closure being found saw.
+	marks List<Int>;
+	round Int;
+}
+_Pike(width Int, size Int) => init{
+	pcs = List(Int);
+	slots = List(Int);
+	width;
+	current = List(width, _none());
+	marks = List(size, Int(0));
+	round = Int(0);
+}
+
+// The context of position `i` (from 0): bit 1 the start of the text, 2
+// the start of a line, 4 a word byte before.
+Int _contextOf(text String, i Int) {
+	if(i == 0) {
+		return Int(3);
+	}
+	b Int = Int(text:byteAt(i));
+	ctx Int = Int(0);
+	if(b == 10) {
+		ctx = ctx + 2;
+	}
+	if(_isWord(b)) {
+		ctx = ctx + 4;
+	}
+	return ctx;
+}
+
+// The threads that instruction `pc0` leads to at position `pos` without
+// consuming a byte, with the current slots, added after those there are.
+Unit add(this _Pike, re Regex, text String, pc0 Int, pos Int) mut {
+	ctx Int = _contextOf(text, pos);
+	next Int = _none();
+	if(pos < text:byteCount()) {
+		next = Int(text:byteAt(pos + 1));
+	}
+	// Pairs: an instruction to follow and 0, or minus a slot (from 1) and
+	// the value to put back in it once what follows is done.
+	stack List<Int> = List(Int);
+	p Int = pc0;
+	stack!push(p);
+	stack!push(Int(0));
+	k Int = Int(1);
+	k!to(re._ops:size() * 4 + 4) {
+		if(stack:size() == 0) {
+			return Unit();
+		}
+		value Int = stack!remove(stack:size());
+		code Int = stack!remove(stack:size());
+		if(code < 0) {
+			this.current[~code] = value;
+		}
+		guard(code < 0);
+		pc Int = code;
+		guard(this.marks[pc] == this.round);
+		this.marks[pc] = this.round;
+		op Int = re._ops[pc];
+		if(op == 0 or op == 1) {
+			this.pcs!push(pc);
+			this.slots!appendRange(this.current, Int(1), this.width);
+		}
+		if(op == 2) {
+			second Int = re._ys[pc];
+			stack!push(second);
+			stack!push(Int(0));
+			first Int = re._xs[pc];
+			stack!push(first);
+			stack!push(Int(0));
+		}
+		if(op == 3) {
+			if(_holds(re._xs[pc], ctx, next)) {
+				after Int = re._ys[pc];
+				stack!push(after);
+				stack!push(Int(0));
+			}
+		}
+		if(op == 4) {
+			slot Int = re._xs[pc] + 1;
+			old Int = this.current[slot];
+			stack!push(~slot);
+			stack!push(old);
+			after Int = re._ys[pc];
+			stack!push(after);
+			stack!push(Int(0));
+			this.current[slot] = pos;
+		}
+	}
+	return Unit();
+}
+
+// The slots of the leftmost-first match that starts at `from` (from 0)
+// where `anchored`, or at or after it, every one -1 where there is none;
+// where `limit` is not -1, no further than that position, where the
+// match is known to end.
+List<Int> _pike(this Regex, text String, from Int, anchored Bool, limit Int) {
+	width Int = (this._groups + 1) * 2;
+	n Int = text:byteCount();
+	vm _Pike = _Pike(width, this._ops:size());
+	best List<Int> = List(width, _none());
+	found Bool = Bool(false);
+	vm.round = vm.round + 1;
+	vm!add(this, text, this._entry, from);
+	pos Int = from;
+	k Int = Int(1);
+	k!to(n - from + 2) {
+		pcs List<Int> = vm.pcs;
+		slots List<Int> = vm.slots;
+		if(pcs:size() == 0 and (found or anchored)) {
+			return best;
+		}
+		vm.pcs = List(Int);
+		vm.slots = List(Int);
+		vm.round = vm.round + 1;
+		b Int = _none();
+		if(pos < n) {
+			b = Int(text:byteAt(pos + 1));
+		}
+		cut Bool = Bool(false);
+		t Int = Int(1);
+		t!to(pcs:size()) {
+			guard(cut);
+			pc Int = pcs[t];
+			op Int = this._ops[pc];
+			if(op == 0) {
+				best = List(Int);
+				best!appendRange(slots, (t - 1) * width + 1, width);
+				found = Bool(true);
+				cut = Bool(true);
+			}
+			if(op == 1 and b >= 0) {
+				if(this._sets[(this._xs[pc] - 1) * 256 + b + 1]) {
+					vm.current = List(Int);
+					vm.current!appendRange(slots, (t - 1) * width + 1, width);
+					vm!add(this, text, this._ys[pc], pos + 1);
+				}
+			}
+		}
+		if(pos >= n or (limit >= 0 and pos >= limit)) {
+			return best;
+		}
+		if(~found and ~anchored) {
+			vm.current = List(width, _none());
+			vm!add(this, text, this._entry, pos + 1);
+		}
+		pos = pos + 1;
+	}
+	return best;
+}

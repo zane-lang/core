@@ -1,0 +1,897 @@
+package regex;
+
+import core$;
+import math$;
+
+// --- the program -------------------------------------------------------------
+
+Int inst(this _Builder, op Int, x Int, y Int) mut {
+	o Int = op;
+	this.ops!push(o);
+	a Int = x;
+	this.xs!push(a);
+	b Int = y;
+	this.ys!push(b);
+	return this.ops:size();
+}
+
+// An assertion's kind with the pattern reversed: the start of the text
+// and the end trade places, and so do the start of a line and its end.
+Int _reversed(kind Int) {
+	if(kind == 1) {
+		return Int(2);
+	}
+	if(kind == 2) {
+		return Int(1);
+	}
+	if(kind == 3) {
+		return Int(4);
+	}
+	if(kind == 4) {
+		return Int(3);
+	}
+	return kind;
+}
+
+// The instructions of node `n`, going on to `next`; with `backward`, of its
+// pattern reversed, which saves no positions. Past 65535 instructions it
+// emits no more, so nested repeats stop growing the program before
+// `finish` refuses it.
+Int emit(this _Builder, n Int, next Int, backward Bool) mut {
+	if(this.ops:size() > 65535) {
+		return next;
+	}
+	kind Int = this.kinds[n];
+	if(kind == 2) {
+		set Int = this.ones[n];
+		return this!inst(Int(1), set, next);
+	}
+	one Int = this.ones[n];
+	two Int = this.twos[n];
+	if(kind == 3) {
+		if(backward) {
+			after Int = this!emit(one, next, backward);
+			return this!emit(two, after, backward);
+		}
+		after Int = this!emit(two, next, backward);
+		return this!emit(one, after, backward);
+	}
+	if(kind == 4) {
+		first Int = this!emit(one, next, backward);
+		second Int = this!emit(two, next, backward);
+		return this!inst(Int(2), first, second);
+	}
+	if(kind == 5) {
+		low Int = this.lows[n];
+		high Int = this.highs[n];
+		greedy Bool = this.greedy[n];
+		entry Int = next;
+		if(high < 0) {
+			// After an iteration the loop is entered again through a split
+			// of its own, so a thread whose iteration was empty still
+			// leaves the loop, with the positions the iteration saved, as
+			// PCRE's does.
+			loop Int = this!inst(Int(2), Int(0), Int(0));
+			again Int = this!inst(Int(2), Int(0), Int(0));
+			body Int = this!emit(one, again, backward);
+			order Bool = if(greedy) {
+				this.xs[loop] = body;
+				this.ys[loop] = next;
+				this.xs[again] = loop;
+				this.ys[again] = next;
+			}
+			order:else() {
+				this.xs[loop] = next;
+				this.ys[loop] = body;
+				this.xs[again] = next;
+				this.ys[again] = loop;
+			}
+			entry = loop;
+		}
+		if(high > low) {
+			k Int = Int(1);
+			k!to(high - low) {
+				guard(this.ops:size() > 65535);
+				body Int = this!emit(one, entry, backward);
+				split Bool = if(greedy) {
+					entry = this!inst(Int(2), body, next);
+				}
+				split:else() {
+					entry = this!inst(Int(2), next, body);
+				}
+			}
+		}
+		k Int = Int(1);
+		k!to(low) {
+			guard(this.ops:size() > 65535);
+			entry = this!emit(one, entry, backward);
+		}
+		return entry;
+	}
+	if(kind == 6) {
+		if(backward) {
+			return this!emit(one, next, backward);
+		}
+		close Int = this!inst(Int(4), two * 2 + 1, next);
+		body Int = this!emit(one, close, backward);
+		return this!inst(Int(4), two * 2, body);
+	}
+	if(kind == 7) {
+		loose Bool = this.loose;
+		if(loose) {
+			return next;
+		}
+		if(backward) {
+			return this!inst(Int(3), _reversed(one), next);
+		}
+		return this!inst(Int(3), one, next);
+	}
+	return next;
+}
+
+// --- the DFAs -----------------------------------------------------------------
+
+// A DFA over byte classes, and one column more for the end of the text.
+// States are numbered with the dead state first, then the match states,
+// then, where the skip loop takes over there, the start states, so that
+// one comparison against `special` finds every state the search loop must
+// look at. A state number is premultiplied by the number of columns: it is
+// the offset of its row in `trans`. A match state is one whose last byte
+// came right after a match's end. The state a search starts in depends on
+// the byte before it: `starts` holds it by context, `contexts` each byte's
+// context and `startCtx` the start of the text's.
+type _Table = struct {
+	starts List<I32>;
+	matchEnd Int;
+	special Int;
+	trans List<I32>;
+	contexts List<I32>;
+	startCtx Int;
+}
+_Table(starts List<I32>, matchEnd Int, special Int, trans List<I32>, contexts List<I32>, startCtx Int) => init{
+	starts;
+	matchEnd;
+	special;
+	trans;
+	contexts;
+	startCtx;
+}
+
+Bool _isWord(b Int) => _isAlnum(b) or b == 95;
+
+// Whether an assertion holds between a byte before of context `ctx` (bit
+// 1 the start of the text, 2 the start of a line, 4 a word byte) and the
+// byte `next`, -1 at the end of the text.
+Bool _holds(kind Int, ctx Int, next Int) {
+	if(kind == 1) {
+		return bitAnd(ctx, Int(1)) ~= 0;
+	}
+	if(kind == 2) {
+		return next < 0;
+	}
+	if(kind == 3) {
+		return bitAnd(ctx, Int(2)) ~= 0;
+	}
+	if(kind == 4) {
+		return next < 0 or next == 10;
+	}
+	before Bool = bitAnd(ctx, Int(4)) ~= 0;
+	after Bool = next >= 0 and _isWord(next);
+	differ Bool = (before and ~after) or (~before and after);
+	if(kind == 5) {
+		return differ;
+	}
+	return ~differ;
+}
+
+// The context after byte `b`, as far as the DFA's assertions tell
+// contexts apart.
+Int context(this _Builder, b Int) {
+	ctx Int = Int(0);
+	if(this.needLine and b == 10) {
+		ctx = ctx + 2;
+	}
+	if(this.needWord and _isWord(b)) {
+		ctx = ctx + 4;
+	}
+	return ctx;
+}
+
+Int startContext(this _Builder) {
+	ctx Int = Int(0);
+	if(this.needStart) {
+		ctx = ctx + 1;
+	}
+	if(this.needLine) {
+		ctx = ctx + 2;
+	}
+	return ctx;
+}
+
+Unit begin(this _Builder) mut {
+	this.list = List(Int);
+	this.matched = Bool(false);
+	this.round = this.round + 1;
+	return Unit();
+}
+
+// The byte instructions state `s`'s kernel leads to without consuming a
+// byte, before a byte of class `c` (the last class: the end of the text),
+// in priority order, in `list`; `matched` where they reach a match, which
+// with `leftmost` cuts the lower priorities off.
+Unit close(this _Builder, s Int, c Int, leftmost Bool) mut {
+	this!begin();
+	ctx Int = this.contexts[s];
+	next Int = _none();
+	if(c < this.reps:size()) {
+		next = this.reps[c + 1];
+	}
+	stack List<Int> = List(Int);
+	top Int = this.bounds[s + 1];
+	j Int = Int(1);
+	j!to(this.bounds[s + 1] - this.bounds[s]) {
+		pc Int = this.lists[top - j];
+		stack!push(pc);
+	}
+	k Int = Int(1);
+	k!to(this.ops:size() * 3 + this.bounds[s + 1] - this.bounds[s] + 3) {
+		if(stack:size() == 0) {
+			return Unit();
+		}
+		pc Int = stack!remove(stack:size());
+		guard(this.seen[pc] == this.round);
+		this.seen[pc] = this.round;
+		op Int = this.ops[pc];
+		if(op == 1) {
+			this.list!push(pc);
+		}
+		if(op == 2) {
+			second Int = this.ys[pc];
+			stack!push(second);
+			first Int = this.xs[pc];
+			stack!push(first);
+		}
+		if(op == 3) {
+			if(_holds(this.xs[pc], ctx, next)) {
+				after Int = this.ys[pc];
+				stack!push(after);
+			}
+		}
+		if(op == 4) {
+			after Int = this.ys[pc];
+			stack!push(after);
+		}
+		if(op == 0) {
+			this.matched = Bool(true);
+			if(leftmost) {
+				return Unit();
+			}
+		}
+	}
+	return Unit();
+}
+
+// The state for `kernel`, context `ctx` and `matched`, made if it is new.
+Int intern(this _Builder, ctx Int) mut {
+	probe List<U8> = List(U8);
+	i Int = Int(1);
+	i!to(this.kernel:size()) {
+		pc Int = this.kernel[i];
+		probe!push(U8.wrap(shiftRightLogical(pc, Int(8))));
+		probe!push(U8.wrap(bitAnd(pc, Int(255))));
+	}
+	probe!push(U8.wrap(ctx));
+	flag Int = Int(0);
+	if(this.matched) {
+		flag = Int(1);
+	}
+	probe!push(U8.wrap(flag));
+	known Int = this.index:findIn(this.keys, probe, Int(1), probe:size());
+	if(known >= 0) {
+		return known;
+	}
+	start Int = this.keys:size() + 1;
+	this.keys!appendRange(probe, Int(1), probe:size());
+	id Int = this.matching:size() + 1;
+	this.index!put(this.keys, start, probe:size(), id);
+	this.lists!appendRange(this.kernel, Int(1), this.kernel:size());
+	end Int = this.lists:size() + 1;
+	this.bounds!push(end);
+	c Int = ctx;
+	this.contexts!push(c);
+	m Bool = this.matched;
+	this.matching!push(m);
+	return id;
+}
+
+// The state after state `s` reads a byte of class `c` (from 0; the last
+// class: the end of the text), interned.
+Int advance(this _Builder, s Int, c Int, leftmost Bool) mut {
+	this!close(s, c, leftmost);
+	this.kernel = List(Int);
+	this.markRound = this.markRound + 1;
+	ctx Int = Int(0);
+	if(c < this.reps:size()) {
+		b Int = this.reps[c + 1];
+		i Int = Int(1);
+		i!to(this.list:size()) {
+			pc Int = this.list[i];
+			if(this:has(this.xs[pc], b)) {
+				next Int = this.ys[pc];
+				if(this.marks[next] ~= this.markRound) {
+					this.marks[next] = this.markRound;
+					this.kernel!push(next);
+				}
+			}
+		}
+		ctx = this:context(b);
+	}
+	if(this.kernel:size() == 0) {
+		ctx = Int(0);
+	}
+	return this!intern(ctx);
+}
+
+// The start state of context `ctx`, interned.
+Int startState(this _Builder, entry Int, ctx Int) mut {
+	this.kernel = List(Int);
+	e Int = entry;
+	this.kernel!push(e);
+	this.matched = Bool(false);
+	return this!intern(ctx);
+}
+
+_Table _emptyTable() => _Table(List(Int(8), I32(0)), Int(0), Int(0), List(I32), List(Int(256), I32(0)), Int(0));
+
+_Table dfa(this _Builder, entry Int, leftmost Bool, skipStart Bool) mut {
+	if(this.overflow) {
+		return _emptyTable();
+	}
+	stride Int = this.reps:size() + 1;
+	this.lists = List(Int);
+	this.bounds = List(Int);
+	this.bounds!push(Int(1));
+	this.contexts = List(Int);
+	this.matching = List(Bool);
+	this.keys = List(U8);
+	this.index = _Index(Int(4096));
+	this.trans = List(Int);
+	this.kernel = List(Int);
+	this.matched = Bool(false);
+	dead Int = this!intern(Int(0));
+	starts List<Int> = List(Int(8), Int(0));
+	startCtx Int = this:startContext();
+	starts[startCtx + 1] = this!startState(entry, startCtx);
+	starts[Int(1)] = this!startState(entry, Int(0));
+	line Int = this:context(Int(10));
+	starts[line + 1] = this!startState(entry, line);
+	word Int = this:context(Int(97));
+	starts[word + 1] = this!startState(entry, word);
+	s Int = Int(1);
+	n Int = Int(1);
+	n!to(Int(10001)) {
+		if(s > this.matching:size()) {
+			return this!renumber(starts, stride, skipStart);
+		}
+		if(this.matching:size() > 10000 or this.matching:size() * stride > 2000000) {
+			this.overflow = Bool(true);
+			return _emptyTable();
+		}
+		c Int = Int(0);
+		c!to(stride - 1) {
+			t Int = this!advance(s, c, leftmost);
+			this.trans!push(t);
+		}
+		s = s + 1;
+	}
+	this.overflow = Bool(true);
+	return _emptyTable();
+}
+
+// The states renumbered: the dead state, the match states, the start
+// states if they are special, then the rest; each premultiplied by the
+// stride.
+_Table renumber(this _Builder, starts List<Int>, stride Int, skipStart Bool) mut {
+	count Int = this.matching:size();
+	order List<Int> = List(Int);
+	placed List<Bool> = List(count, Bool(false));
+	order!push(Int(1));
+	placed[Int(1)] = Bool(true);
+	s Int = Int(2);
+	s!to(count) {
+		if(this.matching[s]) {
+			copy Int = s;
+			order!push(copy);
+			placed[s] = Bool(true);
+		}
+	}
+	matchEnd Int = order:size();
+	if(skipStart) {
+		k Int = Int(1);
+		k!to(Int(8)) {
+			start Int = starts[k];
+			if(start > 0) {
+				if(~placed[start]) {
+					copy Int = start;
+					order!push(copy);
+					placed[start] = Bool(true);
+				}
+			}
+		}
+	}
+	special Int = order:size();
+	t Int = Int(2);
+	t!to(count) {
+		if(~placed[t]) {
+			copy Int = t;
+			order!push(copy);
+		}
+	}
+	number List<Int> = List(count, Int(0));
+	i Int = Int(1);
+	i!to(count) {
+		number[order[i]] = i - 1;
+	}
+	table List<I32> = List(I32);
+	j Int = Int(1);
+	j!to(count) {
+		old Int = order[j];
+		c Int = Int(1);
+		c!to(stride) {
+			table!push(I32.wrap(number[this.trans[(old - 1) * stride + c]] * stride));
+		}
+	}
+	firsts List<I32> = List(Int(8), I32(0));
+	k Int = Int(1);
+	k!to(Int(8)) {
+		if(starts[k] > 0) {
+			firsts[k] = I32.wrap(number[starts[k]] * stride);
+		}
+	}
+	contexts List<I32> = List(I32);
+	b Int = Int(0);
+	b!to(Int(255)) {
+		contexts!push(I32.wrap(this:context(b)));
+	}
+	return _Table(firsts, matchEnd * stride, special * stride, table, contexts, this:startContext());
+}
+
+// --- analysis ------------------------------------------------------------------
+
+// Adds the byte instructions `pc0` leads to without consuming a byte, in
+// priority order, passing every assertion; true where `leftmost` and a
+// match cut the list short.
+Bool follow(this _Builder, pc0 Int, leftmost Bool) mut {
+	stack List<Int> = List(Int);
+	p Int = pc0;
+	stack!push(p);
+	k Int = Int(1);
+	k!to(this.ops:size() * 3 + 3) {
+		if(stack:size() == 0) {
+			return Bool(false);
+		}
+		pc Int = stack!remove(stack:size());
+		guard(this.seen[pc] == this.round);
+		this.seen[pc] = this.round;
+		op Int = this.ops[pc];
+		if(op == 1) {
+			this.list!push(pc);
+		}
+		if(op == 2) {
+			second Int = this.ys[pc];
+			stack!push(second);
+			first Int = this.xs[pc];
+			stack!push(first);
+		}
+		if(op == 3 or op == 4) {
+			after Int = this.ys[pc];
+			stack!push(after);
+		}
+		if(op == 0) {
+			this.matched = Bool(true);
+			if(leftmost) {
+				return Bool(true);
+			}
+		}
+	}
+	return Bool(false);
+}
+
+// A rough share of a byte in typical text, in twentieths of a percent, as
+// Goose's: the digits rank with the letters.
+Int _frequency(b Int) {
+	if(b == 32) {
+		return Int(300);
+	}
+	if(b >= 97 and b <= 122) {
+		if(b == 101 or b == 116 or b == 97 or b == 111 or b == 105 or b == 110 or b == 115 or b == 114 or b == 104 or b == 108) {
+			return Int(100);
+		}
+		return Int(20);
+	}
+	if(b >= 48 and b <= 57) {
+		return Int(40);
+	}
+	if(b >= 65 and b <= 90) {
+		return Int(10);
+	}
+	if(b == 10 or b == 46 or b == 44 or b == 45 or b == 47 or b == 58 or b == 59 or b == 34 or b == 39 or b == 40 or b == 41 or b == 61 or b == 95) {
+		return Int(20);
+	}
+	if(b > 32 and b < 127) {
+		return Int(4);
+	}
+	return Int(1);
+}
+
+// The items of the pattern's top-level concatenation, in order, a group's
+// items among them.
+Unit flatten(this _Builder, n Int) mut {
+	kind Int = this.kinds[n];
+	if(kind == 3) {
+		one Int = this.ones[n];
+		two Int = this.twos[n];
+		this!flatten(one);
+		this!flatten(two);
+		return Unit();
+	}
+	if(kind == 6) {
+		one Int = this.ones[n];
+		this!flatten(one);
+		return Unit();
+	}
+	m Int = n;
+	this.items!push(m);
+	return Unit();
+}
+
+// Every byte node `n` can consume added to `acc`.
+Unit alphabet(this _Builder, n Int) mut {
+	kind Int = this.kinds[n];
+	one Int = this.ones[n];
+	two Int = this.twos[n];
+	if(kind == 2) {
+		b Int = Int(0);
+		b!to(Int(255)) {
+			if(this:has(one, b)) {
+				this.acc[b + 1] = Bool(true);
+			}
+		}
+	}
+	if(kind == 3 or kind == 4) {
+		this!alphabet(one);
+		this!alphabet(two);
+	}
+	if(kind == 6 or (kind == 5 and this.highs[n] ~= 0)) {
+		this!alphabet(one);
+	}
+	return Unit();
+}
+
+// The bytes a match of node `n` can start with added to `acc`; true if it
+// can match the empty string, when what follows it can start one too.
+Bool firstBytes(this _Builder, n Int) mut {
+	kind Int = this.kinds[n];
+	one Int = this.ones[n];
+	two Int = this.twos[n];
+	if(kind == 2) {
+		b Int = Int(0);
+		b!to(Int(255)) {
+			if(this:has(one, b)) {
+				this.acc[b + 1] = Bool(true);
+			}
+		}
+		return Bool(false);
+	}
+	if(kind == 3) {
+		if(this!firstBytes(one)) {
+			return this!firstBytes(two);
+		}
+		return Bool(false);
+	}
+	if(kind == 4) {
+		a Bool = this!firstBytes(one);
+		b Bool = this!firstBytes(two);
+		return a or b;
+	}
+	if(kind == 5) {
+		if(this.highs[n] == 0) {
+			return Bool(true);
+		}
+		c Bool = this!firstBytes(one);
+		return this.lows[n] == 0 or c;
+	}
+	if(kind == 6) {
+		return this!firstBytes(one);
+	}
+	return Bool(true);
+}
+
+// The bytes the items from `t` on can start a match with, in `acc`; true
+// if they can all be empty.
+Bool startsFrom(this _Builder, t Int) mut {
+	k Int = t;
+	k!to(this.items:size()) {
+		item Int = this.items[k];
+		if(~this!firstBytes(item)) {
+			return Bool(false);
+		}
+	}
+	return Bool(true);
+}
+
+// The byte set at position `at` (from 0) of `prefix`, whose 256 flags for
+// that position start at element at*256+1; empty when `prefix` has none
+// there.
+ByteSet _prefixSet(prefix List<Bool>, at Int) {
+	members List<Bool> = List(Int(256), Bool(false));
+	if(prefix:size() >= (at + 1) * 256) {
+		b Int = Int(1);
+		b!to(Int(256)) {
+			members[b] = prefix[at * 256 + b];
+		}
+	}
+	return members:byteSet();
+}
+
+/// The pattern compiled, or why it does not compile. The syntax is in
+/// the package's README.
+Regex?RegexError compile(pattern String) {
+	r _Builder = _Builder(pattern);
+	root Int = r!parseAlt();
+	if(~r.failed and r:peek() >= 0) {
+		r!fail("a ) closes no group");
+	}
+	if(r.failed) {
+		abort RegexError(r.message, r.errorAt);
+	}
+	built Regex = r!finish(root);
+	if(r.failed) {
+		abort RegexError(r.message, r.errorAt);
+	}
+	return built;
+}
+
+/// A `Regex` that matches nothing: the fallback where a pattern does not
+/// compile, as in `compile(pattern) ?? Regex.never()`.
+Regex.never() {
+	r _Builder = _Builder(String(""));
+	set Int = r!newSet();
+	root Int = r!byteNode(set);
+	n Regex = r!finish(root);
+	return init{
+		_nullable = n._nullable;
+		_classes = n._classes;
+		_end = n._end;
+		_forward = n._forward;
+		_reverse = n._reverse;
+		_skip = n._skip;
+		_inner = n._inner;
+		_before = n._before;
+		_least = n._least;
+		_at1 = n._at1;
+		_at2 = n._at2;
+		_set1 = n._set1;
+		_set2 = n._set2;
+		_fallback = n._fallback;
+		_groups = n._groups;
+		_names = n._names;
+		_ops = n._ops;
+		_xs = n._xs;
+		_ys = n._ys;
+		_sets = n._sets;
+		_entry = n._entry;
+	}
+}
+
+// The program, the analysis and the DFAs of the parsed pattern `root`;
+// `failed` where the program grows too large.
+Regex finish(this _Builder, root Int) mut {
+	// The capturing program: group 0's slots around the pattern.
+	matchPc Int = this!inst(Int(0), Int(0), Int(0));
+	closing Int = this!inst(Int(4), Int(1), matchPc);
+	body Int = this!emit(root, closing, Bool(false));
+	entry Int = this!inst(Int(4), Int(0), body);
+	// The unanchored start: (?s:.)*? ahead of the pattern, lowest priority.
+	any Int = this!newSet();
+	this!addRange(any, Int(0), Int(255));
+	head Int = this!inst(Int(2), entry, Int(0));
+	loop Int = this!inst(Int(1), any, head);
+	this.ys[head] = loop;
+	backMatch Int = this!inst(Int(0), Int(0), Int(0));
+	backEntry Int = this!emit(root, backMatch, Bool(true));
+	if(this.ops:size() > 65535) {
+		this.at = Int(1);
+		this!fail("the pattern compiles to more than 65535 instructions");
+		return Regex.never();
+	}
+	this.seen = List(this.ops:size(), Int(0));
+	// The byte sets every match's leading bytes are in, up to 8 of them.
+	prefix List<Bool> = List(Bool);
+	this!begin();
+	reached Bool = this!follow(entry, Bool(false));
+	nullable Bool = this.matched;
+	if(~nullable) {
+		k Int = Int(1);
+		k!to(Int(8)) {
+			if(~this.matched) {
+				front List<Int> = this.list;
+				this!begin();
+				base Int = prefix:size();
+				b Int = Int(1);
+				b!to(Int(256)) {
+					prefix!push(Bool(false));
+				}
+				i Int = Int(1);
+				i!to(front:size()) {
+					pc Int = front[i];
+					set Int = this.xs[pc];
+					c Int = Int(0);
+					c!to(Int(255)) {
+						if(this:has(set, c)) {
+							prefix[base + c + 1] = Bool(true);
+						}
+					}
+					next Int = this.ys[pc];
+					more Bool = this!follow(next, Bool(false));
+				}
+			}
+		}
+	}
+	positions Int = prefix:size() / 256;
+	// The pair of positions, or the one, whose bytes are rarest: shares in
+	// millionths over four.
+	best Int = Int(4000000);
+	at1 Int = Int(0);
+	at2 Int = Int(0);
+	shares List<Int> = List(positions, Int(0));
+	j Int = Int(1);
+	j!to(positions) {
+		c Int = Int(0);
+		c!to(Int(255)) {
+			if(prefix[(j - 1) * 256 + c + 1]) {
+				shares[j] = shares[j] + _frequency(c);
+			}
+		}
+	}
+	p Int = Int(1);
+	p!to(positions) {
+		q Int = p;
+		q!to(positions) {
+			share Int = shares[p] * shares[q];
+			if(p == q) {
+				share = shares[p] * 2000;
+			}
+			if(share < best) {
+				best = share;
+				at1 = p - 1;
+				at2 = q - 1;
+			}
+		}
+	}
+	// The inner byte: of the sets of bytes that can start the rest of the
+	// pattern after a leading part of its concatenation, the rarest one the
+	// leading part cannot consume.
+	this!flatten(root);
+	innerShare Int = Int(2000);
+	innerAt Int = Int(0);
+	inner List<Bool> = List(Int(256), Bool(false));
+	t Int = Int(2);
+	t!to(this.items:size()) {
+		this.acc = List(Int(256), Bool(false));
+		e Int = Int(1);
+		e!to(t - 1) {
+			item Int = this.items[e];
+			this!alphabet(item);
+		}
+		before List<Bool> = this.acc;
+		this.acc = List(Int(256), Bool(false));
+		empty Bool = this!startsFrom(t);
+		share Int = Int(0);
+		disjoint Bool = ~empty;
+		c Int = Int(1);
+		c!to(Int(256)) {
+			if(this.acc[c]) {
+				share = share + _frequency(c - 1);
+				if(before[c]) {
+					disjoint = Bool(false);
+				}
+			}
+		}
+		if(disjoint and share < innerShare) {
+			inner = this.acc;
+			innerShare = share;
+			innerAt = t;
+		}
+	}
+	// A skip loop pays where it lets through under a tenth of the
+	// positions; the inner byte, each of whose hits costs a backward scan,
+	// is taken only where it is several times rarer than the prefix test.
+	skip Int = Int(0);
+	part Int = Int(0);
+	if(positions > 0 and innerAt > 1 and innerShare < 200 and innerShare * 8000 < best) {
+		skip = Int(2);
+		part = this.items[Int(1)];
+		q Int = Int(2);
+		q!to(innerAt - 1) {
+			item Int = this.items[q];
+			part = this!node(Int(3), part, item, Int(0), Int(0), Bool(true));
+		}
+	}
+	if(skip == 0 and positions > 0 and best < 400000) {
+		skip = Int(1);
+	}
+	partMatch Int = this!inst(Int(0), Int(0), Int(0));
+	partEntry Int = partMatch;
+	if(skip == 2) {
+		// A filter for where a match can start: its assertions pass.
+		this.loose = Bool(true);
+		partEntry = this!emit(part, partMatch, Bool(true));
+		this.loose = Bool(false);
+	}
+	if(this.ops:size() > 65535) {
+		this.at = Int(1);
+		this!fail("the pattern compiles to more than 65535 instructions");
+		this.overflow = Bool(true);
+	}
+	this.seen = List(this.ops:size(), Int(0));
+	this.marks = List(this.ops:size(), Int(0));
+	set1 ByteSet = _prefixSet(prefix, at1);
+	set2 ByteSet = _prefixSet(prefix, at2);
+	// Sets that keep a newline and the word bytes in classes of their own
+	// where an assertion tells them apart.
+	if(this.asserts[Int(3)] or this.asserts[Int(4)]) {
+		newline Int = this!newSet();
+		this!addRange(newline, Int(10), Int(10));
+	}
+	words Bool = this.asserts[Int(5)] or this.asserts[Int(6)];
+	if(words) {
+		word Int = this!newSet();
+		this!addClass(word, Int(4));
+	}
+	// The byte classes: two bytes share one when every set treats them
+	// alike.
+	classes List<Int> = List(Int(256), Int(0));
+	sets Int = this.sets:size() / 256;
+	k Int = Int(1);
+	k!to(sets) {
+		split List<Int> = List(Int(512), _none());
+		n Int = Int(0);
+		b Int = Int(0);
+		b!to(Int(255)) {
+			key Int = classes[b + 1] * 2 + 1;
+			if(this:has(k, b)) {
+				key = key + 1;
+			}
+			if(split[key] < 0) {
+				split[key] = n;
+				n = n + 1;
+			}
+			classes[b + 1] = split[key];
+		}
+	}
+	b Int = Int(0);
+	b!to(Int(255)) {
+		if(classes[b + 1] == this.reps:size()) {
+			copy Int = b;
+			this.reps!push(copy);
+		}
+		this.classes!push(I32.wrap(classes[b + 1]));
+	}
+	this.needStart = this.asserts[Int(1)];
+	this.needLine = this.asserts[Int(3)];
+	this.needWord = words;
+	forward _Table = this!dfa(head, Bool(true), skip > 0);
+	this.needStart = this.asserts[Int(2)];
+	this.needLine = this.asserts[Int(4)];
+	reverse _Table = this!dfa(backEntry, Bool(false), Bool(false));
+	this.needStart = Bool(false);
+	this.needLine = Bool(false);
+	this.needWord = Bool(false);
+	beforeTable _Table = this!dfa(partEntry, Bool(false), Bool(false));
+	fallback Bool = this.overflow;
+	if(fallback) {
+		skip = Int(0);
+	}
+	return Regex._built(nullable, this.classes, this.reps:size(), forward, reverse, skip, inner:byteSet(), beforeTable, positions, at1, at2, set1, set2, fallback, this.groups, this.names, this.ops, this.xs, this.ys, this.sets, entry);
+}
