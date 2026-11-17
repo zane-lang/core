@@ -54,9 +54,8 @@ T remove(this List<T Type>, index Int) mut => this._value!remove(index._value);
 /// which moves one element whatever the index, but does not keep the order.
 T swapRemove(this List<T Type>, index Int) mut => this._value!swapRemove(index._value);
 (this List<T Type>)[index Int] => this._value[index._value];
-/// EXPERIMENT (LangArena zane-vs-goose): `count` elements of `from`, from
-/// its element `start`, copied onto the end, as one copy. For elements
-/// that own no blocks.
+/// `count` elements of `from`, from its element `start`, copied onto the
+/// end, as one copy. For elements that own no blocks.
 Unit appendRange(this List<T Type>, from List<T>, start Int, count Int) mut {
 	this._value!appendRange(from._value, start._value, count._value);
 	return Unit();
@@ -86,14 +85,13 @@ Unit appendOwn(this List<T Type>, start Int, count Int) mut {
 	this._value!appendOwn(start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): whether `count` elements from
-/// `start` are the same as `count` of `other` from `otherStart`, as one
-/// comparison of their bytes. For lists of integers.
+/// Whether `count` elements from `start` are the same as `count` of
+/// `other` from `otherStart`, as one comparison of their bytes. For lists
+/// of integers.
 Bool sameRange(this List<T Type>, start Int, other List<T>, otherStart Int, count Int) =>
 	Int(this._value:sameRange(start._value, other._value, otherStart._value, count._value)) == Int(1);
-/// EXPERIMENT (LangArena zane-vs-goose): a hash of `count` elements from
-/// `start`, read a word at a time; equal ranges hash alike within a run.
-/// For lists of integers.
+/// A hash of `count` elements from `start`, read a word at a time; equal
+/// ranges hash alike within a run. For lists of integers.
 Int hashRange(this List<T Type>, start Int, count Int) => Int(this._value:hashRange(start._value, count._value));
 
 
@@ -118,5 +116,5 @@ Unit push(this ListRef<T Type>, value ^T) mut {
 ^T swapRemove(this ListRef<T Type>, index Int) mut => this._value!swapRemove(index._value);
 (this ListRef<T Type>)[index Int] => this._value[index._value];
 
-/// EXPERIMENT (LangArena zane-vs-c): a String holding the bytes of `bytes`.
+/// A String holding the bytes of `bytes`.
 String(bytes List<U8>) => String(bytes._value:text());
