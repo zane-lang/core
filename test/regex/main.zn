@@ -148,6 +148,9 @@ Unit main() {
 	console!expect("(?i)bot|crawl", "Bot crawler ROBOT", "1+3 5+5 15+3", "1+3");
 	console!expect("(?i)[a-c]+", "xAbCx", "2+3", "2+3");
 	console!expect("(?i)[^a]+", "AaBb", "3+2", "3+2");
+	console!expect("(?i)[[:^lower:]]+", "aB1-", "3+2", "3+2");
+	console!expect("(?i)[[:^upper:]]+", "aB1-", "3+2", "3+2");
+	console!expect("a{0000002}", "aaa", "1+2", "1+2");
 	console!expect("a(?i)b", "aB AB", "1+2", "1+2");
 	console!expect("a(?i:b)c", "aBc aBC", "1+3", "1+3");
 	console!expect("(?i:a)b", "Ab AB", "1+2", "1+2");
@@ -234,6 +237,7 @@ Unit main() {
 	console!refuse("a{2}{3}", Int(5));
 	console!refuse("a{3,2}", Int(7));
 	console!refuse("a{1001}", Int(8));
+	console!refuse("a{10000000}", Int(12));
 	console!refuse("\\q", Int(3));
 	console!refuse("a\\", Int(3));
 	console!refuse("\\xZZ", Int(3));

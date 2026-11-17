@@ -361,7 +361,9 @@ Int hexEscape(this _Builder) mut {
 	return high * 16 + low;
 }
 
-// A set holding the class `which` (negative: its complement).
+// A set holding the class `which` (negative: its complement). The class
+// is folded before its complement is taken, so `(?i)[[:^lower:]]` holds no
+// letter of either case.
 Int classSet(this _Builder, which Int) mut {
 	set Int = this!newSet();
 	positive Bool = if(which > 0) {
@@ -369,6 +371,10 @@ Int classSet(this _Builder, which Int) mut {
 	}
 	positive:else() {
 		this!addClass(set, ~which);
+		folds Bool = this.insensitive;
+		if(folds) {
+			this!fold(set);
+		}
 		this!invert(set);
 	}
 	return set;
@@ -766,11 +772,12 @@ Int parseAtom(this _Builder) mut {
 	return this!byteNode(set);
 }
 
-// A decimal number at the pattern's position, or -1 if none.
+// A decimal number at the pattern's position, every digit of it read, or
+// -1 if none; past 1000 it reads as 1001, which no bound may be.
 Int number(this _Builder) mut {
 	n Int = _none();
 	k Int = Int(1);
-	k!to(Int(7)) {
+	k!to(this.pattern:byteCount() + 1) {
 		c Int = this:peek();
 		if(~_isDigit(c)) {
 			return n;
@@ -779,6 +786,9 @@ Int number(this _Builder) mut {
 			n = Int(0);
 		}
 		n = n * 10 + c - 48;
+		if(n > 1000) {
+			n = Int(1001);
+		}
 		this!skip();
 	}
 	return n;
