@@ -380,26 +380,44 @@ List<Int> _spans(this Regex, text String) {
 	at Int = Int(0);
 	lastEnd Int = _none();
 	k Int = Int(1);
+	fallback Bool = this._fallback;
 	k!to(n + 2) {
 		if(at > n) {
 			return out;
 		}
-		span List<Int> = this:_search(text, at);
-		s Int = span[Int(1)];
-		e Int = span[Int(2)];
-		if(e < 0) {
-			return out;
+		// The match from `at`, or, where it is empty right at the last
+		// one's end, the one from the byte after; the DFAs are run here
+		// directly, so no list is made for each match.
+		from Int = at;
+		s Int = _none();
+		e Int = _none();
+		done Bool = Bool(false);
+		j Int = Int(1);
+		j!to(Int(2)) {
+			guard(done);
+			found Bool = if(fallback) {
+				span List<Int> = this:_search(text, from);
+				s = span[Int(1)];
+				e = span[Int(2)];
+			}
+			found:else() {
+				e = this:_findEnd(text, from, Bool(false));
+				s = _none();
+				if(e >= 0) {
+					s = _scanBack(this._reverse, this._classes, this._end, text, from, e);
+				}
+			}
+			done = Bool(true);
+			if(e >= 0 and s == e and e == lastEnd) {
+				done = from == n or j == 2;
+				if(from == n) {
+					e = _none();
+				}
+				from = from + 1;
+			}
 		}
-		if(s == e and e == lastEnd) {
-			if(at == n) {
-				return out;
-			}
-			span = this:_search(text, at + 1);
-			s = span[Int(1)];
-			e = span[Int(2)];
-			if(e < 0) {
-				return out;
-			}
+		if(e < 0 or (s == e and e == lastEnd)) {
+			return out;
 		}
 		out!push(s);
 		out!push(e);
