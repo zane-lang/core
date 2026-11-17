@@ -8,12 +8,15 @@ The language itself provides only machine-level building blocks (the
 normally write with, such as `Int`, `String`, `List`, `if` and loops, is
 declared here, in ordinary Zane source you can read.
 
-This repository holds two library packages:
+This repository holds three library packages:
 
 - **`core`** ([`lib/core/`](lib/core/)): the types and verbs almost every
   program uses.
 - **`math`** ([`lib/math/`](lib/math/)): math functions over `core`'s `Int`
   and `Float`, and over the narrow `I32` and `F32`.
+- **`regex`** ([`lib/regex/`](lib/regex/)): regular expressions over a
+  string's bytes, with groups and anchors, searched in linear time. Its
+  syntax and verbs are in [its README](lib/regex/README.md).
 
 ## Using it
 
@@ -53,6 +56,7 @@ Unit main() {
 | [`console.zn`](lib/core/console.zn) | `Console`, which prints |
 | [`runtime.zn`](lib/core/runtime.zn) | `Runtime`: the program's command-line `arguments` and its thread count |
 | [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int` and `I32`; the float functions also over `F32` |
+| [`regex/`](lib/regex/) | `compile`, which makes a `Regex`, and its `find`, `findAll`, `count`, `isMatch` and `captures`; `Match` and `Captures` |
 
 A program is handed its console and runtime as `@program$console` and
 `@program$runtime`, and wraps them in `Console` and `Runtime`. Code it does not
