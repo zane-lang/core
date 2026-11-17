@@ -34,8 +34,13 @@ Int _reversed(kind Int) {
 }
 
 // The instructions of node `n`, going on to `next`; with `backward`, of its
-// pattern reversed, which saves no positions.
+// pattern reversed, which saves no positions. Past 65535 instructions it
+// emits no more, so nested repeats stop growing the program before
+// `finish` refuses it.
 Int emit(this _Builder, n Int, next Int, backward Bool) mut {
+	if(this.ops:size() > 65535) {
+		return next;
+	}
 	kind Int = this.kinds[n];
 	if(kind == 2) {
 		set Int = this.ones[n];

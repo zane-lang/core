@@ -105,8 +105,11 @@ Match group(this Captures, group Int) {
 }
 
 /// The match of the group named `name`, by `(?<name>...)`; `start` 0 as
-/// for `group`, and for a name no group has.
+/// for `group`, and for a name no group has, the empty one included.
 Match named(this Captures, name String) {
+	if(name == "") {
+		return Match(Int(0), Int(0));
+	}
 	i Int = Int(1);
 	i!to(this._names:size()) {
 		if(this._names[i] == name) {

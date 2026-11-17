@@ -198,6 +198,8 @@ Unit main() {
 	all List<Captures> = d:capturesAll(text);
 	console!check(all:size() == 2);
 	console!check(all[Int(2)]:named("day"):text(text) == "05");
+	// Group 3, unnamed, matched there: no name finds it, the empty one neither.
+	console!check(all[Int(2)]:group(Int(3)):found() and all[Int(2)]:named(""):found() == Bool(false));
 	console!check(all[Int(2)]:group(Int(0)):end() == 26);
 	later Captures = d:capturesFrom(text, Int(5));
 	console!check(later:group(Int(1)):text(text) == "2027");
@@ -246,5 +248,6 @@ Unit main() {
 	console!refuse("(?<1a>b)", Int(4));
 	console!refuse("(?<n>a)(?<n>b)", Int(13));
 	console!refuse("(a{1000}){1000}", Int(1));
+	console!refuse("((a{1000}){1000}){1000}", Int(1));
 	return Unit();
 }
