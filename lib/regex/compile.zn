@@ -91,6 +91,7 @@ Int emit(this _Builder, n Int, next Int, backward Bool) mut {
 		if(high > low) {
 			k Int = Int(1);
 			k!to(high - low) {
+				guard(this.ops:size() > 65535);
 				body Int = this!emit(one, entry, backward);
 				split Bool = if(greedy) {
 					entry = this!inst(Int(2), body, next);
@@ -102,6 +103,7 @@ Int emit(this _Builder, n Int, next Int, backward Bool) mut {
 		}
 		k Int = Int(1);
 		k!to(low) {
+			guard(this.ops:size() > 65535);
 			entry = this!emit(one, entry, backward);
 		}
 		return entry;
@@ -698,6 +700,11 @@ Regex finish(this _Builder, root Int) mut {
 	this.ys[head] = loop;
 	backMatch Int = this!inst(Int(0), Int(0), Int(0));
 	backEntry Int = this!emit(root, backMatch, Bool(true));
+	if(this.ops:size() > 65535) {
+		this.at = Int(1);
+		this!fail("the pattern compiles to more than 65535 instructions");
+		return Regex.never();
+	}
 	this.seen = List(this.ops:size(), Int(0));
 	// The byte sets every match's leading bytes are in, up to 8 of them.
 	prefix List<Bool> = List(Bool);

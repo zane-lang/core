@@ -253,5 +253,6 @@ Unit main() {
 	console!refuse("(?<n>a)(?<n>b)", Int(13));
 	console!refuse("(a{1000}){1000}", Int(1));
 	console!refuse("((a{1000}){1000}){1000}", Int(1));
+	console!refuse("((a{0,1000}){0,1000}){0,1000}", Int(1));
 	return Unit();
 }
