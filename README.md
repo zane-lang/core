@@ -1,6 +1,6 @@
-# core
+# std
 
-The basic types and control flow of the [Zane](https://github.com/zane-lang/zane)
+The standard library of the [Zane](https://github.com/zane-lang/zane)
 programming language, written in Zane.
 
 The language itself provides only machine-level building blocks (the
@@ -21,10 +21,10 @@ This repository holds three library packages:
 ## Using it
 
 Add it to a project with the [`zane`](https://github.com/zane-lang/zane)
-command. `core` publishes no prebuilt objects, so it is compiled from source:
+command. `std` publishes no prebuilt objects, so it is compiled from source:
 
 ```sh
-zane add https://github.com/zane-lang/core --from-source
+zane add https://github.com/zane-lang/std --from-source
 ```
 
 Then import it. `import core$;` makes its names usable directly; `import math;`
