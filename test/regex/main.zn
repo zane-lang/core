@@ -150,7 +150,7 @@ Unit main() {
 	console!expect("(?i)[^a]+", "AaBb", "3+2", "3+2");
 	console!expect("(?i)[[:^lower:]]+", "aB1-", "3+2", "3+2");
 	console!expect("(?i)[[:^upper:]]+", "aB1-", "3+2", "3+2");
-	console!expect("a{0000002}", "aaa", "1+2", "1+2");
+	console!expect("a{00000002}", "aaa", "1+2", "1+2");
 	console!expect("a(?i)b", "aB AB", "1+2", "1+2");
 	console!expect("a(?i:b)c", "aBc aBC", "1+3", "1+3");
 	console!expect("(?i:a)b", "Ab AB", "1+2", "1+2");
