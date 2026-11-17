@@ -117,3 +117,9 @@ time). Groups come from a Pike VM run over just the bytes the DFAs found.
 A pattern whose DFAs would grow past 10,000 states, such as `[ab]*a[ab]{14}`,
 is searched by the Pike VM instead. Its results are the same, found more
 slowly.
+
+One search is linear in the text. `findAll`, `capturesAll` and `count` start
+each search where the last match ended, so a pattern that must read far ahead
+to rule out a longer, earlier alternative reads that stretch again for every
+match: `a.*b|a` over a long run of `a` without a `b` takes time quadratic in
+its length. Rust's `regex` crate has the same worst case.
