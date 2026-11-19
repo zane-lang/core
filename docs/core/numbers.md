@@ -115,8 +115,8 @@ Unit main() {
 42 -7 -1 2.5
 ```
 
-`text:parseFloat(start, count)` reads the `count` bytes from byte `start`
-(counted from 1); its source marks it as an experiment.
+`text:parseFloat(start, count)` reads only the `count` bytes from byte
+`start` (counted from 1), without copying them out of `text`.
 
 The [`math`](../math.md) package adds square roots, powers, trigonometry,
 rounding and bit operations.

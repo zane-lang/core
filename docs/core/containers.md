@@ -58,14 +58,14 @@ Unit main() {
 | `l!swapRemove(i)` | takes out the element at `i` and moves the last one into its place: faster, but the order changes |
 | `l!appendRange(from, start, count)` | copies `count` elements of `from`, from `start`, onto the end |
 | `l!appendOwn(start, count)` | the same, from the list itself |
+| `l!copyRange(at, from, start, count)` | copies `count` elements of `from`, from `start`, over the list's own from `at` |
+| `l!sort()` | sorts the elements in place, ascending, for lists of `Int`, `I32` or `U8` |
 | `l:sameRange(start, other, otherStart, count)` | whether two ranges hold the same elements, for lists of integers |
 | `l:hashRange(start, count)` | a hash of a range, for lists of integers |
 
-`appendRange` and `appendOwn` are for elements that own no memory of their
-own, such as numbers. `l!sort()` sorts a list of `Int`, `I32` or `U8`,
-`l!sortBy(keys)` sorts a `List<I32>` of positions by the keys they name, and
-`l!copyRange(at, from, start, count)` copies a range over the list's own
-elements; their source marks all three as experiments.
+`appendRange`, `appendOwn` and `copyRange` are for elements that own no
+memory of their own, such as numbers. `l!sortBy(keys)` sorts a `List<I32>`
+of positions by the keys they name; its source marks it as an experiment.
 
 A `List` is a value, so copying one copies its elements, and a value type
 may hold one as a field.
@@ -153,6 +153,34 @@ Unit main() {
 
 ```output
 64 in 3 cells
+```
+
+`ArrayRef.roaming(values)` takes each element instead, so an owner of a
+reference type moves in, and a value is copied. Its elements stay where they
+are, so they are changed in place:
+
+```zane
+package hello;
+
+import core$;
+
+type Jar = #struct {
+	beans Int;
+}
+Jar(beans Int) => init{ beans; }
+
+Unit main() {
+	console Console(@program$console);
+	spare ^Jar = Jar(Int(2));
+	jars ArrayRef<Jar, 2> = ArrayRef.roaming([Jar(Int(1)), spare]);
+	jars[Int(2)].beans = jars[Int(2)].beans * 10;
+	console!print(String(jars[Int(1)].beans) + " " + String(jars[Int(2)].beans));
+	return Unit();
+}
+```
+
+```output
+1 20
 ```
 
 ## Source
