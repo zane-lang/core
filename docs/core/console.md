@@ -1,0 +1,53 @@
+# Console and runtime
+
+This page covers `Console`, which prints, and `Runtime`, which gives the program's arguments and sizes its thread pool.
+
+Both wrap a capability the program receives from the language:
+`@program$console` and `@program$runtime`. Only the program's own package can
+name these, so other code prints or reads arguments only when it is handed a
+`Console` or `Runtime`.
+
+```zane
+package hello;
+
+import core$;
+
+Unit main() {
+	console Console(@program$console);
+	runtime Runtime(@program$runtime);
+	console!print("Hello");
+	args List<String> = runtime:arguments();
+	console!print(String(args:size()) + " arguments");
+	runtime!setThreads(Int(4)) ? e {
+		console!print("could not resize the thread pool");
+		resolve Unit();
+	}
+	return Unit();
+}
+```
+
+```output
+Hello
+0 arguments
+```
+
+| Verb | What it does |
+|---|---|
+| `Console(@program$console)` | the program's console |
+| `console!print(text)` | writes `text` and a newline to standard output |
+| `Runtime(@program$runtime)` | the program's runtime |
+| `runtime:arguments()` | the command-line arguments, without the program's name, as a `List<String>` |
+| `runtime!setThreads(count)` | sizes the thread pool to `count` threads; aborts with `Unit` when `count` is below one |
+| `runtime!setThreadsAuto()` | sizes the thread pool to the hardware's concurrency |
+
+## `Unit` and `Bool`
+
+`Unit` is the type with one value, `Unit()`, returned by functions that have
+nothing else to return. `Bool` is `true` or `false`, made with `Bool(true)`,
+with the operators `and`, `or`, `~` (not), `==` and `~=`.
+
+## Source
+
+[`lib/core/console.zn`](https://github.com/zane-lang/std/blob/main/lib/core/console.zn),
+[`lib/core/runtime.zn`](https://github.com/zane-lang/std/blob/main/lib/core/runtime.zn)
+and [`lib/core/primitives.zn`](https://github.com/zane-lang/std/blob/main/lib/core/primitives.zn)

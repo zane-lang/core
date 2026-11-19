@@ -18,6 +18,9 @@ This repository holds three library packages:
   string's bytes, with groups and anchors, searched in linear time. Its
   syntax and verbs are in [its README](lib/regex/README.md).
 
+The reader pages for these packages are in [`docs/`](docs/README.md), which
+the Zane website serves as its Library section.
+
 ## Using it
 
 Add it to a project with the [`zane`](https://github.com/zane-lang/zane)
