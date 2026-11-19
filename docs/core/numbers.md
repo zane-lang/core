@@ -59,12 +59,13 @@ overflow: `I32(2147483647) + 1` is the smallest `I32`.
 ## Conversions
 
 No number type converts to another on its own. The conversions are
-constructors, and a lossy one has a name that says what it does:
+constructors. Each one that drops part of the number has a name that says
+how, except `Float(i)` from an `Int`, which rounds:
 
 | Conversion | Result |
 |---|---|
 | `Float(i)` for an `I32` or `F32` | the same number as a `Float` |
-| `Float(i)` for an `Int` | the nearest `Float`, which differs beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
+| `Float(i)` for an `Int` | the nearest `Float`, which may differ from it beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
 | `Int(i)` for an `I32` or `U8` | the same number as an `Int` |
 | `Int.truncate(f)` | an `Int`: the `Float` rounded toward zero, held to the `Int` range |
 | `I32.wrap(i)` | the low 32 bits of an `Int` |
