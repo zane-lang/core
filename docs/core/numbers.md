@@ -66,7 +66,7 @@ constructors, and a lossy one has a name that says what it does:
 | `Float(i)` for an `I32` or `F32` | the same number as a `Float` |
 | `Float(i)` for an `Int` | the nearest `Float`, which differs beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
 | `Int(i)` for an `I32` or `U8` | the same number as an `Int` |
-| `Int.truncate(f)` | an `Int`: the `Float` rounded toward zero |
+| `Int.truncate(f)` | an `Int`: the `Float` rounded toward zero, held to the `Int` range |
 | `I32.wrap(i)` | the low 32 bits of an `Int` |
 | `I32.truncate(f)` | an `I32`: the `Float` or `F32` rounded toward zero, held to the `I32` range |
 | `F32.round(x)` | the nearest `F32` to a `Float`, `Int` or `I32` |
