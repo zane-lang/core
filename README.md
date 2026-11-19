@@ -80,8 +80,10 @@ verb is used.
 zane test
 ```
 
-A check that fails prints `no` and the run carries on, so `zane test` still
-reports the package as passed: read the output for any `no`.
+A check that fails prints `no` and the run carries on. At the end, a test
+program with a failed check aborts `main` with a message naming the failed
+checks by number, so it ends with status 1 and `zane test` reports the
+package as failed.
 
 `zane test` uses the compiler `core` pins. When no release archive of that
 version exists for your platform, point `ZANE_COMPILER` at a newer `zanec`.
