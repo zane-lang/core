@@ -16,7 +16,7 @@ This repository holds three library packages:
   and `Float`, and over the narrow `I32` and `F32`.
 - **`regex`** ([`lib/regex/`](lib/regex/)): regular expressions over a
   string's bytes, with groups and anchors, searched in linear time. Its
-  syntax and verbs are in [its README](lib/regex/README.md).
+  syntax and verbs are in [`docs/regex.md`](docs/regex.md).
 
 The reader pages for these packages are in [`docs/`](docs/README.md), which
 the Zane website serves as its Library section.
