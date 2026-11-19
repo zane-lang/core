@@ -41,6 +41,7 @@ Unit main() {
 sqrt(2) is more than 1.4
 ```
 
-These pages describe `std` v0.15, built with compiler v0.40. To learn the
+These pages describe `std` v0.15, which pins compiler v0.39; their examples
+are checked with compiler v0.40, which builds it too. To learn the
 language itself, start with the
 [Learn pages](https://github.com/zane-lang/docs/blob/main/docs/README.md).
