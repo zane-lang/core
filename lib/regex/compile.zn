@@ -15,8 +15,9 @@ Int inst(this _Builder, op Int, x Int, y Int) mut {
 	return this.ops:size();
 }
 
-// An assertion's kind with the pattern reversed: the start of the text
-// and the end trade places, and so do the start of a line and its end.
+// The kind that an assertion has in the reversed pattern: the start of the
+// text and the end of the text swap, and so do the start of a line and the
+// end of a line.
 Int _reversed(kind Int) {
 	if(kind == 1) {
 		return Int(2);
@@ -33,10 +34,11 @@ Int _reversed(kind Int) {
 	return kind;
 }
 
-// The instructions of node `n`, going on to `next`; with `backward`, of its
-// pattern reversed, which saves no positions. Past 65535 instructions it
-// emits no more, so nested repeats stop growing the program before
-// `finish` refuses it.
+// Emits the instructions of node `n`, continuing at instruction `next`; with
+// `backward`, emits the instructions of the reversed pattern of `n`, which
+// save no positions. Once the program has 65535 instructions, `emit` emits no
+// more, so nested repeats stop growing the program before `finish` refuses
+// the program.
 Int emit(this _Builder, n Int, next Int, backward Bool) mut {
 	if(this.ops:size() > 65535) {
 		return next;
@@ -67,10 +69,10 @@ Int emit(this _Builder, n Int, next Int, backward Bool) mut {
 		greedy Bool = this.greedy[n];
 		entry Int = next;
 		if(high < 0) {
-			// After an iteration the loop is entered again through a split
-			// of its own, so a thread whose iteration was empty still
-			// leaves the loop, with the positions the iteration saved, as
-			// PCRE's does.
+			// After an iteration, the loop is entered again through a
+			// separate split, so a thread whose iteration matched the empty
+			// string still leaves the loop, keeping the positions that the
+			// iteration saved, as in PCRE.
 			loop Int = this!inst(Int(2), Int(0), Int(0));
 			again Int = this!inst(Int(2), Int(0), Int(0));
 			body Int = this!emit(one, again, backward);
@@ -131,15 +133,17 @@ Int emit(this _Builder, n Int, next Int, backward Bool) mut {
 
 // --- the DFAs -----------------------------------------------------------------
 
-// A DFA over byte classes, and one column more for the end of the text.
+// A DFA over byte classes, with one more column for the end of the text.
 // States are numbered with the dead state first, then the match states,
-// then, where the skip loop takes over there, the start states, so that
-// one comparison against `special` finds every state the search loop must
-// look at. A state number is premultiplied by the number of columns: it is
-// the offset of its row in `trans`. A match state is one whose last byte
-// came right after a match's end. The state a search starts in depends on
-// the byte before it: `starts` holds it by context, `contexts` each byte's
-// context and `startCtx` the start of the text's.
+// then the start states when the skip loop runs in the start states, so that
+// one comparison against `special` finds every state that the search loop
+// must handle. A state number is premultiplied by the number of columns, so
+// the state number is the offset of the state's row in `trans`. A match
+// state is a state whose last byte came right after the end of a match. The
+// start state of a search depends on the byte before the search's start:
+// `starts` holds the start state for each context, `contexts` holds each
+// byte's context, and `startCtx` holds the context at the start of the
+// text.
 type _Table = struct {
 	starts List<I32>;
 	matchEnd Int;
@@ -159,9 +163,10 @@ _Table(starts List<I32>, matchEnd Int, special Int, trans List<I32>, contexts Li
 
 Bool _isWord(b Int) => _isAlnum(b) or b == 95;
 
-// Whether an assertion holds between a byte before of context `ctx` (bit
-// 1 the start of the text, 2 the start of a line, 4 a word byte) and the
-// byte `next`, -1 at the end of the text.
+// Whether an assertion of kind `kind` holds between a preceding byte of
+// context `ctx` (bit 1: the start of the text, bit 2: the start of a line,
+// bit 4: a word byte) and the byte `next`, which is -1 at the end of the
+// text.
 Bool _holds(kind Int, ctx Int, next Int) {
 	if(kind == 1) {
 		return bitAnd(ctx, Int(1)) ~= 0;
@@ -184,8 +189,8 @@ Bool _holds(kind Int, ctx Int, next Int) {
 	return ~differ;
 }
 
-// The context after byte `b`, as far as the DFA's assertions tell
-// contexts apart.
+// The context after byte `b`, keeping only the context bits that the DFA's
+// assertions test.
 Int context(this _Builder, b Int) {
 	ctx Int = Int(0);
 	if(this.needLine and b == 10) {
@@ -215,10 +220,11 @@ Unit begin(this _Builder) mut {
 	return Unit();
 }
 
-// The byte instructions state `s`'s kernel leads to without consuming a
-// byte, before a byte of class `c` (the last class: the end of the text),
-// in priority order, in `list`; `matched` where they reach a match, which
-// with `leftmost` cuts the lower priorities off.
+// Puts in `list`, in priority order, the byte instructions that the kernel
+// of state `s` reaches without consuming a byte, before a byte of class `c`
+// (the last class is the end of the text). Sets `matched` when the closure
+// reaches a match instruction; with `leftmost`, a match cuts off the
+// instructions of lower priority.
 Unit close(this _Builder, s Int, c Int, leftmost Bool) mut {
 	this!begin();
 	ctx Int = this.contexts[s];
@@ -271,7 +277,8 @@ Unit close(this _Builder, s Int, c Int, leftmost Bool) mut {
 	return Unit();
 }
 
-// The state for `kernel`, context `ctx` and `matched`, made if it is new.
+// The state for `kernel`, context `ctx` and `matched`; creates the state
+// when no such state exists yet.
 Int intern(this _Builder, ctx Int) mut {
 	probe List<U8> = List(U8);
 	i Int = Int(1);
@@ -304,8 +311,8 @@ Int intern(this _Builder, ctx Int) mut {
 	return id;
 }
 
-// The state after state `s` reads a byte of class `c` (from 0; the last
-// class: the end of the text), interned.
+// The state that state `s` moves to on a byte of class `c` (counted from 0;
+// the last class is the end of the text), created if it is new.
 Int advance(this _Builder, s Int, c Int, leftmost Bool) mut {
 	this!close(s, c, leftmost);
 	this.kernel = List(Int);
@@ -332,7 +339,7 @@ Int advance(this _Builder, s Int, c Int, leftmost Bool) mut {
 	return this!intern(ctx);
 }
 
-// The start state of context `ctx`, interned.
+// The start state for context `ctx`, created if it is new.
 Int startState(this _Builder, entry Int, ctx Int) mut {
 	this.kernel = List(Int);
 	e Int = entry;
@@ -388,9 +395,9 @@ _Table dfa(this _Builder, entry Int, leftmost Bool, skipStart Bool) mut {
 	return _emptyTable();
 }
 
-// The states renumbered: the dead state, the match states, the start
-// states if they are special, then the rest; each premultiplied by the
-// stride.
+// Renumbers the states in this order: the dead state, the match states,
+// the start states when `skipStart` makes them special, then the other
+// states. Each new number is premultiplied by `stride`.
 _Table renumber(this _Builder, starts List<Int>, stride Int, skipStart Bool) mut {
 	count Int = this.matching:size();
 	order List<Int> = List(Int);
@@ -458,9 +465,9 @@ _Table renumber(this _Builder, starts List<Int>, stride Int, skipStart Bool) mut
 
 // --- analysis ------------------------------------------------------------------
 
-// Adds the byte instructions `pc0` leads to without consuming a byte, in
-// priority order, passing every assertion; true where `leftmost` and a
-// match cut the list short.
+// Adds, in priority order, the byte instructions that instruction `pc0`
+// reaches without consuming a byte, treating every assertion as passing.
+// Returns true when `leftmost` is set and a match cut the list short.
 Bool follow(this _Builder, pc0 Int, leftmost Bool) mut {
 	stack List<Int> = List(Int);
 	p Int = pc0;
@@ -497,8 +504,9 @@ Bool follow(this _Builder, pc0 Int, leftmost Bool) mut {
 	return Bool(false);
 }
 
-// A rough share of a byte in typical text, in twentieths of a percent, as
-// Goose's: the digits rank with the letters.
+// A rough frequency of byte `b` in typical text, in twentieths of a
+// percent, taken from Goose's table, in which digits are as frequent as
+// letters.
 Int _frequency(b Int) {
 	if(b == 32) {
 		return Int(300);
@@ -524,8 +532,8 @@ Int _frequency(b Int) {
 	return Int(1);
 }
 
-// The items of the pattern's top-level concatenation, in order, a group's
-// items among them.
+// Lists the items of the pattern's top-level concatenation, in order, with
+// the items of each group in that concatenation listed in its place.
 Unit flatten(this _Builder, n Int) mut {
 	kind Int = this.kinds[n];
 	if(kind == 3) {
@@ -545,7 +553,7 @@ Unit flatten(this _Builder, n Int) mut {
 	return Unit();
 }
 
-// Every byte node `n` can consume added to `acc`.
+// Adds to `acc` every byte that node `n` can consume.
 Unit alphabet(this _Builder, n Int) mut {
 	kind Int = this.kinds[n];
 	one Int = this.ones[n];
@@ -568,8 +576,9 @@ Unit alphabet(this _Builder, n Int) mut {
 	return Unit();
 }
 
-// The bytes a match of node `n` can start with added to `acc`; true if it
-// can match the empty string, when what follows it can start one too.
+// Adds to `acc` the bytes that a match of node `n` can start with. Returns
+// true when node `n` can match the empty string; the bytes that the pattern
+// after node `n` starts with can then start a match too.
 Bool firstBytes(this _Builder, n Int) mut {
 	kind Int = this.kinds[n];
 	one Int = this.ones[n];
@@ -607,8 +616,9 @@ Bool firstBytes(this _Builder, n Int) mut {
 	return Bool(true);
 }
 
-// The bytes the items from `t` on can start a match with, in `acc`; true
-// if they can all be empty.
+// Adds to `acc` the bytes that the items from item `t` onward can start a
+// match with. Returns true when all those items can match the empty
+// string.
 Bool startsFrom(this _Builder, t Int) mut {
 	k Int = t;
 	k!to(this.items:size()) {
@@ -620,9 +630,9 @@ Bool startsFrom(this _Builder, t Int) mut {
 	return Bool(true);
 }
 
-// The byte set at position `at` (from 0) of `prefix`, whose 256 flags for
-// that position start at element at*256+1; empty when `prefix` has none
-// there.
+// The byte set at position `at` (counted from 0) of `prefix`. The 256 flags
+// for that position start at element at*256+1. The set is empty when
+// `prefix` has no flags at that position.
 ByteSet _prefixSet(prefix List<Bool>, at Int) {
 	members List<Bool> = List(Int(256), Bool(false));
 	if(prefix:size() >= (at + 1) * 256) {
@@ -652,8 +662,8 @@ Regex?RegexError compile(pattern String) {
 	return built;
 }
 
-/// A `Regex` that matches nothing: the fallback where a pattern does not
-/// compile, as in `compile(pattern) ?? Regex.never()`.
+/// A `Regex` that matches nothing, used as the fallback when a pattern does
+/// not compile, as in `compile(pattern) ?? Regex.never()`.
 Regex.never() {
 	r _Builder = _Builder(String(""));
 	set Int = r!newSet();
@@ -684,15 +694,16 @@ Regex.never() {
 	}
 }
 
-// The program, the analysis and the DFAs of the parsed pattern `root`;
-// `failed` where the program grows too large.
+// Builds the program, the analysis and the DFAs of the parsed pattern
+// `root`; the result is `failed` when the program grows too large.
 Regex finish(this _Builder, root Int) mut {
-	// The capturing program: group 0's slots around the pattern.
+	// The capturing program: the pattern between the two slots of group 0.
 	matchPc Int = this!inst(Int(0), Int(0), Int(0));
 	closing Int = this!inst(Int(4), Int(1), matchPc);
 	body Int = this!emit(root, closing, Bool(false));
 	entry Int = this!inst(Int(4), Int(0), body);
-	// The unanchored start: (?s:.)*? ahead of the pattern, lowest priority.
+	// The unanchored start: (?s:.)*? before the pattern, at the lowest
+	// priority.
 	any Int = this!newSet();
 	this!addRange(any, Int(0), Int(255));
 	head Int = this!inst(Int(2), entry, Int(0));
@@ -706,7 +717,8 @@ Regex finish(this _Builder, root Int) mut {
 		return Regex.never();
 	}
 	this.seen = List(this.ops:size(), Int(0));
-	// The byte sets every match's leading bytes are in, up to 8 of them.
+	// For each of the first 8 bytes of a match, the set of bytes that byte
+	// can be.
 	prefix List<Bool> = List(Bool);
 	this!begin();
 	reached Bool = this!follow(entry, Bool(false));
@@ -739,8 +751,8 @@ Regex finish(this _Builder, root Int) mut {
 		}
 	}
 	positions Int = prefix:size() / 256;
-	// The pair of positions, or the one, whose bytes are rarest: shares in
-	// millionths over four.
+	// The pair of positions, or the single position, whose bytes are
+	// rarest. Frequencies are in millionths, divided by four.
 	best Int = Int(4000000);
 	at1 Int = Int(0);
 	at2 Int = Int(0);
@@ -769,9 +781,10 @@ Regex finish(this _Builder, root Int) mut {
 			}
 		}
 	}
-	// The inner byte: of the sets of bytes that can start the rest of the
-	// pattern after a leading part of its concatenation, the rarest one the
-	// leading part cannot consume.
+	// The inner byte: for each leading part of the pattern's concatenation,
+	// take the set of bytes that can start the rest of the pattern; the
+	// inner set is the rarest such set whose bytes the leading part cannot
+	// consume.
 	this!flatten(root);
 	innerShare Int = Int(2000);
 	innerAt Int = Int(0);
@@ -804,9 +817,10 @@ Regex finish(this _Builder, root Int) mut {
 			innerAt = t;
 		}
 	}
-	// A skip loop pays where it lets through under a tenth of the
-	// positions; the inner byte, each of whose hits costs a backward scan,
-	// is taken only where it is several times rarer than the prefix test.
+	// A skip loop is worth running when it passes fewer than a tenth of the
+	// positions. Each hit of the inner byte costs a backward scan, so the
+	// inner byte is chosen only when its hits are several times rarer than
+	// those of the prefix test.
 	skip Int = Int(0);
 	part Int = Int(0);
 	if(positions > 0 and innerAt > 1 and innerShare < 200 and innerShare * 8000 < best) {
@@ -824,7 +838,8 @@ Regex finish(this _Builder, root Int) mut {
 	partMatch Int = this!inst(Int(0), Int(0), Int(0));
 	partEntry Int = partMatch;
 	if(skip == 2) {
-		// A filter for where a match can start: its assertions pass.
+		// The part is emitted as a filter for the positions where a match
+		// can start, with the part's assertions treated as passing.
 		this.loose = Bool(true);
 		partEntry = this!emit(part, partMatch, Bool(true));
 		this.loose = Bool(false);
@@ -838,8 +853,8 @@ Regex finish(this _Builder, root Int) mut {
 	this.marks = List(this.ops:size(), Int(0));
 	set1 ByteSet = _prefixSet(prefix, at1);
 	set2 ByteSet = _prefixSet(prefix, at2);
-	// Sets that keep a newline and the word bytes in classes of their own
-	// where an assertion tells them apart.
+	// Sets that put the newline and the word bytes in separate classes when
+	// an assertion depends on them.
 	if(this.asserts[Int(3)] or this.asserts[Int(4)]) {
 		newline Int = this!newSet();
 		this!addRange(newline, Int(10), Int(10));
@@ -849,8 +864,8 @@ Regex finish(this _Builder, root Int) mut {
 		word Int = this!newSet();
 		this!addClass(word, Int(4));
 	}
-	// The byte classes: two bytes share one when every set treats them
-	// alike.
+	// The byte classes: two bytes share a class when every set holds both
+	// or neither.
 	classes List<Int> = List(Int(256), Int(0));
 	sets Int = this.sets:size() / 256;
 	k Int = Int(1);

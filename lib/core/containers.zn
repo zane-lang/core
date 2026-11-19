@@ -31,8 +31,8 @@ type List<T Type> = struct {
 List<T>(T Type) => init{
 	_value = @primitives$List(T);
 }
-/// `n` copies of `value`, in a block made once for all of them: none when
-/// `n` is below one.
+/// A list of `n` copies of `value`, allocated in one block; an empty list
+/// when `n` is below one.
 List<T>(n Int, value T Type) {
 	values @primitives$List<T> = @primitives$List(T);
 	@controlflow$repeat(n, {
@@ -47,40 +47,41 @@ Unit push(this List<T Type>, value T) mut {
 	this._value!push(value);
 	return Unit();
 }
-/// Takes the element at `index` out and shifts the later ones down, keeping
-/// their order.
+/// Takes the element at `index` out and shifts the later elements down,
+/// keeping their order.
 T remove(this List<T Type>, index Int) mut => this._value!remove(index._value);
-/// Takes the element at `index` out and moves the last one into its place,
-/// which moves one element whatever the index, but does not keep the order.
+/// Takes the element at `index` out and moves the last element into its
+/// place. This moves only one element, whatever the index, but does not keep
+/// the order.
 T swapRemove(this List<T Type>, index Int) mut => this._value!swapRemove(index._value);
 (this List<T Type>)[index Int] => this._value[index._value];
-/// `count` elements of `from`, from its element `start`, copied onto the
-/// end, as one copy. For elements that own no blocks.
+/// Copies `count` elements of `from`, starting at element `start`, onto the
+/// end of the list in a single copy. Only for elements that own no blocks.
 Unit appendRange(this List<T Type>, from List<T>, start Int, count Int) mut {
 	this._value!appendRange(from._value, start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): `count` elements of `from`, from
-/// its element `start`, copied over this list's own from its element `at`,
-/// as one copy. Both ranges lie within their lists. For elements that own
+/// EXPERIMENT (LangArena zane-vs-goose): copies `count` elements of `from`,
+/// starting at element `start`, over this list's elements starting at element
+/// `at`, in a single copy. Both ranges lie within their lists. For elements that own
 /// no blocks.
 Unit copyRange(this List<T Type>, at Int, from List<T>, start Int, count Int) mut {
 	this._value!copyRange(at._value, from._value, start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): a list of `I32` indices into
-/// `keys` sorted stably by the key each names, ascending.
+/// EXPERIMENT (LangArena zane-vs-goose): sorts this list of `I32` indices
+/// into `keys` stably, in ascending order of the key at each index.
 Unit sortBy(this List<T Type>, keys List<K Type>) mut {
 	this._value!sortBy(keys._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): the elements sorted in place,
-/// ascending. For lists of integers: `I32`, `Int` and `U8`.
+/// EXPERIMENT (LangArena zane-vs-goose): sorts the elements in place, in
+/// ascending order. For lists of integers: `I32`, `Int` and `U8`.
 Unit sort(this List<T Type>) mut {
 	this._value!sort();
 	return Unit();
 }
-/// As `appendRange`, of the list's own elements.
+/// Like `appendRange`, but copies the list's own elements.
 Unit appendOwn(this List<T Type>, start Int, count Int) mut {
 	this._value!appendOwn(start._value, count._value);
 	return Unit();
@@ -91,7 +92,7 @@ Unit appendOwn(this List<T Type>, start Int, count Int) mut {
 Bool sameRange(this List<T Type>, start Int, other List<T>, otherStart Int, count Int) =>
 	Int(this._value:sameRange(start._value, other._value, otherStart._value, count._value)) == Int(1);
 /// A hash of `count` elements from `start`, read a word at a time; equal
-/// ranges hash alike within a run. For lists of integers.
+/// ranges have equal hashes within one run of the program. For lists of integers.
 Int hashRange(this List<T Type>, start Int, count Int) => Int(this._value:hashRange(start._value, count._value));
 
 
@@ -108,11 +109,12 @@ Unit push(this ListRef<T Type>, value ^T) mut {
 	this._value!push(value);
 	return Unit();
 }
-/// Moves the element at `index` out and shifts the later ones down, keeping
-/// their order.
+/// Moves the element at `index` out and shifts the later elements down,
+/// keeping their order.
 ^T remove(this ListRef<T Type>, index Int) mut => this._value!remove(index._value);
-/// Moves the element at `index` out and moves the last one into its place,
-/// which moves one element whatever the index, but does not keep the order.
+/// Moves the element at `index` out and moves the last element into its
+/// place. This moves only one element, whatever the index, but does not keep
+/// the order.
 ^T swapRemove(this ListRef<T Type>, index Int) mut => this._value!swapRemove(index._value);
 (this ListRef<T Type>)[index Int] => this._value[index._value];
 

@@ -2,10 +2,10 @@ package math;
 
 import core$;
 
-// The math functions (math.md §3), over core's Int, Float, I32 and F32. Each is
-// a function, not a method: it computes a result from its inputs
-// (functions.md §3.6). Each operand reaches its intrinsic through core's
-// implicit conversion to the scalar it holds.
+// The math functions (math.md §3), over core's Int, Float, I32 and F32. Each
+// one is a function, not a method: it computes a result from its inputs
+// (functions.md §3.6). Each operand is passed to its intrinsic through core's
+// implicit conversion to the primitive scalar that the operand holds.
 
 
 // Int
@@ -26,9 +26,9 @@ Int shiftRight(value Int, count Int) => Int(@math$shiftRight(value, count));
 /// The bits moved `count` places down, zeros filling in. The count is taken
 /// modulo 64.
 Int shiftRightLogical(value Int, count Int) => Int(@math$shiftRightLogical(value, count));
-/// The bits moved `count` places up, those moved out filling in below.
+/// The bits moved `count` places up, the bits moved out filling in below.
 Int rotateLeft(value Int, count Int) => Int(@math$rotateLeft(value, count));
-/// The bits moved `count` places down, those moved out filling in above.
+/// The bits moved `count` places down, the bits moved out filling in above.
 Int rotateRight(value Int, count Int) => Int(@math$rotateRight(value, count));
 /// The number of set bits.
 Int popCount(value Int) => Int(@math$popCount(value));
@@ -36,7 +36,7 @@ Int popCount(value Int) => Int(@math$popCount(value));
 Int leadingZeros(value Int) => Int(@math$leadingZeros(value));
 /// The number of zero bits below the lowest set bit; 64 for zero.
 Int trailingZeros(value Int) => Int(@math$trailingZeros(value));
-/// The magnitude. The most negative `Int` gives itself back.
+/// The magnitude. For the most negative `Int`, returns that same value.
 Int abs(value Int) => Int(@math$abs(value));
 Int min(left Int, right Int) => Int(@math$min(left, right));
 Int max(left Int, right Int) => Int(@math$max(left, right));
@@ -64,11 +64,11 @@ Float max(left Float, right Float) => Float(@math$max(left, right));
 
 // Float: approximate, the platform's C math library (math.md §2.6)
 Float cbrt(value Float) => Float(@math$cbrt(value));
-/// Of an angle in radians.
+/// The sine, cosine and tangent of an angle in radians.
 Float sin(value Float) => Float(@math$sin(value));
 Float cos(value Float) => Float(@math$cos(value));
 Float tan(value Float) => Float(@math$tan(value));
-/// In radians.
+/// The arcsine, arccosine and arctangent, in radians.
 Float asin(value Float) => Float(@math$asin(value));
 Float acos(value Float) => Float(@math$acos(value));
 Float atan(value Float) => Float(@math$atan(value));
@@ -100,9 +100,9 @@ I32 shiftRight(value I32, count I32) => I32(@math$shiftRight(value, count));
 /// The bits moved `count` places down, zeros filling in. The count is taken
 /// modulo 32.
 I32 shiftRightLogical(value I32, count I32) => I32(@math$shiftRightLogical(value, count));
-/// The bits moved `count` places up, those moved out filling in below.
+/// The bits moved `count` places up, the bits moved out filling in below.
 I32 rotateLeft(value I32, count I32) => I32(@math$rotateLeft(value, count));
-/// The bits moved `count` places down, those moved out filling in above.
+/// The bits moved `count` places down, the bits moved out filling in above.
 I32 rotateRight(value I32, count I32) => I32(@math$rotateRight(value, count));
 /// The number of set bits.
 I32 popCount(value I32) => I32(@math$popCount(value));
@@ -110,7 +110,7 @@ I32 popCount(value I32) => I32(@math$popCount(value));
 I32 leadingZeros(value I32) => I32(@math$leadingZeros(value));
 /// The number of zero bits below the lowest set bit; 32 for zero.
 I32 trailingZeros(value I32) => I32(@math$trailingZeros(value));
-/// The magnitude. The most negative `I32` gives itself back.
+/// The magnitude. For the most negative `I32`, returns that same value.
 I32 abs(value I32) => I32(@math$abs(value));
 I32 min(left I32, right I32) => I32(@math$min(left, right));
 I32 max(left I32, right I32) => I32(@math$max(left, right));
@@ -138,11 +138,11 @@ F32 max(left F32, right F32) => F32(@math$max(left, right));
 
 // F32: approximate, the platform's C math library (math.md §2.6)
 F32 cbrt(value F32) => F32(@math$cbrt(value));
-/// Of an angle in radians.
+/// The sine, cosine and tangent of an angle in radians.
 F32 sin(value F32) => F32(@math$sin(value));
 F32 cos(value F32) => F32(@math$cos(value));
 F32 tan(value F32) => F32(@math$tan(value));
-/// In radians.
+/// The arcsine, arccosine and arctangent, in radians.
 F32 asin(value F32) => F32(@math$asin(value));
 F32 acos(value F32) => F32(@math$acos(value));
 F32 atan(value F32) => F32(@math$atan(value));
@@ -157,10 +157,11 @@ F32 hypot(x F32, y F32) => F32(@math$hypot(x, y));
 
 
 // Literal arguments
-/// A call whose arguments are all literals has no operand to name a width, so
-/// the compiler does not choose (generics.md §5.4); each of these takes that
-/// choice itself, for `Int` and `Float` as the defaults. `I32` and `F32` stay
-/// opt-in: write `I32(7)`. A call with a typed operand does not reach these.
+/// When every argument of a call is a literal, no operand gives the width, and
+/// the compiler does not pick one (generics.md §5.4). The overloads below pick
+/// `Int` or `Float`, the default widths, for such calls. To use `I32` or
+/// `F32`, write `I32(7)`. A call with an operand of a declared type never uses
+/// these overloads.
 Int bitAnd(left @concepts$Int, right @concepts$Int) => bitAnd(Int(left), Int(right));
 Int bitOr(left @concepts$Int, right @concepts$Int) => bitOr(Int(left), Int(right));
 Int bitXor(left @concepts$Int, right @concepts$Int) => bitXor(Int(left), Int(right));

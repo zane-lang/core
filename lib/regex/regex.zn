@@ -3,35 +3,36 @@ package regex;
 import core$;
 import math$;
 
-// Regular expressions on bytes, leftmost-first as Perl's, PCRE's and the
-// Rust regex crate's, on the model of Goose's (its stdlib regex.goose).
+// Regular expressions over bytes, with leftmost-first matching as in Perl,
+// PCRE and the Rust regex crate, modelled on Goose's regex (regex.goose in
+// Goose's stdlib).
 //
-// A pattern is parsed into a syntax tree and compiled to a Thompson NFA,
-// built back to front from its match instruction, so an instruction's
-// successors are in place when it is added. From the NFA come two complete
-// DFAs, by subset construction: a forward one over the pattern with an
-// unanchored, lowest-priority `.*?` ahead of it, which finds where the
-// leftmost-first match ends, and one over the reversed pattern, which walks
-// back from that end to where the match starts. A search is then a table
-// lookup per byte, and wherever the forward DFA is back in a start state a
-// skip loop passes over the text where no match can start: one that tests
-// the two bytes, at fixed offsets of every match's leading bytes, that are
-// rarest by a rough frequency, or one that looks for a rare byte inside
-// every match.
+// A pattern is parsed into a syntax tree and compiled to a Thompson NFA.
+// The NFA is built back to front, starting from its match instruction, so
+// an instruction's successors already exist when the instruction is added.
+// Subset construction then builds two complete DFAs from the NFA: a forward
+// DFA over the pattern with an unanchored, lowest-priority `.*?` before it,
+// which finds where the leftmost-first match ends, and a reverse DFA over the
+// reversed pattern, which runs back from that end to where the match starts.
+// A search then costs one table lookup per byte. Whenever the forward DFA is
+// in a start state again, a skip loop passes over the text where no match
+// can start. The skip loop either tests two bytes at fixed offsets from the
+// start of every match, the two that are rarest by a rough frequency table,
+// or looks for a rare byte that every match contains.
 //
-// An assertion looks at the byte before a position and the byte after it.
-// A DFA state remembers what the byte before tells (the start of the text,
-// a newline, a word byte), and its NFA states are followed past an
-// assertion only once the next byte is read, so a state is a match state
-// when the byte that led to it came right after a match; the end of the
-// text is one more column of the tables.
+// An assertion tests the byte before a position and the byte after it. A
+// DFA state records what kind of byte came before (the start of the text, a
+// newline, a word byte), and the DFA follows its NFA states past an
+// assertion only once it reads the next byte. A DFA state is therefore a
+// match state when the byte that led to it came right after a match. The end
+// of the text is one more column of the transition tables.
 //
-// Groups' positions come from a Pike VM over the same NFA, run over a
-// match the DFAs found. Where a pattern's DFAs would grow past their limit,
-// the Pike VM finds the matches too.
+// The positions of groups come from a Pike VM over the same NFA, run over
+// a match that the DFAs found. When a pattern's DFAs would grow past their
+// size limit, the Pike VM also finds the matches.
 
-/// Why a pattern does not compile: what is wrong, and where in the
-/// pattern it was found, as the byte from 1.
+/// Why a pattern does not compile: a message describing the error, and the
+/// position of the error in the pattern, as a byte position counted from 1.
 type RegexError = struct {
 	message String;
 	at Int;
@@ -41,9 +42,10 @@ RegexError(message String, at Int) => init{
 	at;
 }
 
-/// Where a match lies in its text: `start`, its first byte counted from 1
-/// as `byteAt` counts, and `count` bytes. A search that finds nothing, and
-/// a group that took no part in a match, give `start` 0.
+/// The position of a match in the searched text: `start` is the match's
+/// first byte, counted from 1 as `byteAt` counts, and `count` is the number
+/// of bytes in the match. When a search finds nothing, or a group took no
+/// part in a match, `start` is 0.
 type Match = struct {
 	start Int;
 	count Int;
@@ -53,13 +55,14 @@ Match(start Int, count Int) => init{
 	count;
 }
 
-/// Whether it is a match, not the absence of one.
+/// Whether this `Match` is a found match rather than the result of a search
+/// that found nothing.
 Bool found(this Match) => this.start > 0;
 
-/// The position after its last byte, counted from 1.
+/// The position after the match's last byte, counted from 1.
 Int end(this Match) => this.start + this.count;
 
-/// The bytes of `text` it covers; empty where nothing was found.
+/// The bytes of `text` that the match covers; empty when nothing was found.
 String text(this Match, text String) {
 	if(this.start <= 0) {
 		return String("");
@@ -67,7 +70,8 @@ String text(this Match, text String) {
 	return _slice(text, this.start - 1, this.start - 1 + this.count);
 }
 
-// A match from its start and end, from 0; none where the start is -1.
+// A `Match` from a start and an end counted from 0; a not-found `Match`
+// when `start` is -1.
 Match _span(start Int, end Int) {
 	if(start < 0) {
 		return Match(Int(0), Int(0));
@@ -75,11 +79,13 @@ Match _span(start Int, end Int) {
 	return Match(start + 1, end - start);
 }
 
-/// A match and its groups. Group 0 is the whole match, and group `k` the
-/// `k`th group whose `(` opens in the pattern, counting `(?<name>...)`
-/// but not `(?:...)`.
+/// A match and its groups. Group 0 is the whole match, and group `k` is the
+/// `k`th capturing group, numbered in the order of the groups' opening `(`
+/// in the pattern. Named groups `(?<name>...)` are counted; non-capturing
+/// groups `(?:...)` are not.
 type Captures = struct {
-	// Each group's start and end, from 0, -1 for one that took no part.
+	// Each group's start and end, counted from 0; both are -1 for a group
+	// that took no part in the match.
 	_slots List<Int>;
 	_names List<String>;
 }
@@ -91,12 +97,12 @@ Captures._of(slots List<Int>, names List<String>) => init{
 /// Whether there is a match.
 Bool found(this Captures) => this._slots[Int(1)] >= 0;
 
-/// The number of groups, the whole match's included.
+/// The number of groups, including group 0, the whole match.
 Int size(this Captures) => this._slots:size() / 2;
 
-/// Group `group`'s match. A group that took no part, a number past the
-/// pattern's groups, and every group where there is no match give
-/// `start` 0.
+/// The match of group number `group`. The result's `start` is 0 when the
+/// group took no part in the match, when `group` is larger than the number
+/// of groups in the pattern, and for every group when there is no match.
 Match group(this Captures, group Int) {
 	if(group < 0 or group >= this:size()) {
 		return Match(Int(0), Int(0));
@@ -104,8 +110,9 @@ Match group(this Captures, group Int) {
 	return _span(this._slots[group * 2 + 1], this._slots[group * 2 + 2]);
 }
 
-/// The match of the group named `name`, by `(?<name>...)`; `start` 0 as
-/// for `group`, and for a name no group has, the empty one included.
+/// The match of the group named `name` by `(?<name>...)`. The result's
+/// `start` is 0 in the same cases as for `group`, and also when no group has
+/// the name `name`, which includes the empty name.
 Match named(this Captures, name String) {
 	if(name == "") {
 		return Match(Int(0), Int(0));
@@ -122,17 +129,19 @@ Match named(this Captures, name String) {
 /// A compiled pattern, made by `compile`.
 type Regex = struct {
 	_nullable Bool;
-	// Each byte's class, at the byte plus one, and the end of the text's.
+	// The class of each byte, at index byte + 1, followed by the class of
+	// the end of the text.
 	_classes List<I32>;
 	_end Int;
 	_forward _Table;
 	_reverse _Table;
-	// The prefix test: every match is at least `least` bytes long, and its
-	// bytes at offsets `at1` and `at2` are in `set1` and `set2`. How a
-	// search skips where the forward DFA is in a start state: 0 not at all,
-	// 1 by the prefix test, 2 by the inner byte: every match holds a byte
-	// of `inner` right after a part whose own bytes are never in it, and
-	// `before` is the reverse DFA of that part.
+	// The prefix test: every match is at least `least` bytes long, and the
+	// match's bytes at offsets `at1` and `at2` are in `set1` and `set2`.
+	// The skip method, used while the forward DFA is in a start state: 0
+	// for no skipping, 1 for the prefix test, 2 for the inner byte. With the
+	// inner byte, every match contains a byte of `inner` right after a
+	// leading part whose bytes are never in `inner`, and `before` is the
+	// reverse DFA of that leading part.
 	_skip Int;
 	_inner ByteSet;
 	_before _Table;
@@ -141,11 +150,12 @@ type Regex = struct {
 	_at2 Int;
 	_set1 ByteSet;
 	_set2 ByteSet;
-	// Whether the Pike VM searches, the DFAs having grown too large.
+	// Whether the Pike VM does the search because the DFAs grew too large.
 	_fallback Bool;
 	_groups Int;
 	_names List<String>;
-	// The capturing program, from `entry`, and its byte sets.
+	// The capturing program, which starts at instruction `entry`, and its
+	// byte sets.
 	_ops List<Int>;
 	_xs List<Int>;
 	_ys List<Int>;
@@ -176,13 +186,14 @@ Regex._built(nullable Bool, classes List<I32>, end Int, forward _Table, reverse 
 	_entry = entry;
 }
 
-/// The number of groups the pattern has, not counting the whole match.
+/// The number of groups in the pattern, not counting group 0, the whole
+/// match.
 Int groupCount(this Regex) => this._groups;
 
 // --- searching -------------------------------------------------------------------
 
-// The context of position `i` (from 0) for DFA `d`: of the byte before it,
-// or of the start of the text.
+// The context of position `i` (counted from 0) for DFA `d`: the context of
+// the byte before position `i`, or the context of the start of the text.
 Int _contextAt(d _Table, text String, i Int) {
 	if(i == 0) {
 		return d.startCtx;
@@ -190,8 +201,8 @@ Int _contextAt(d _Table, text String, i Int) {
 	return Int(d.contexts[Int(text:byteAt(i)) + 1]);
 }
 
-// The prefix test's next position at or after `i` (from 0) where a match
-// can start; the text's length if none.
+// The first position at or after `i` (counted from 0) where the prefix test
+// allows a match to start; the length of the text when there is none.
 Int _skipPrefix(this Regex, text String, i Int) {
 	n Int = text:byteCount();
 	fits Int = n - this._least + 1;
@@ -205,10 +216,10 @@ Int _skipPrefix(this Regex, text String, i Int) {
 	return p - this._at1;
 }
 
-// The inner byte's next position at or after `i` where a match can start:
-// where the part before an inner byte starts, found by running its reverse
-// DFA back from the byte, no further than `i` or than the inner byte
-// before.
+// The first position at or after `i` where the inner-byte test allows a
+// match to start. The position is the start of the leading part before an
+// inner byte, found by running the leading part's reverse DFA back from the
+// inner byte, but no further back than `i` or the previous inner byte.
 Int _skipInner(this Regex, text String, i Int) {
 	n Int = text:byteCount();
 	low Int = i;
@@ -242,9 +253,10 @@ Int _resume(this Regex, text String, i Int) {
 	return i;
 }
 
-// The end (from 0, past its last byte) of the leftmost-first match that
-// starts at or after `at`, or -1; with `earliest`, the end of the first
-// match the forward DFA comes to, which says only whether there is one.
+// The end (counted from 0, just past the last byte) of the leftmost-first
+// match that starts at or after `at`, or -1 when there is no match. With
+// `earliest`, returns the end of the first match that the forward DFA
+// reaches; that end is useful only to learn whether there is a match.
 Int _findEnd(this Regex, text String, at Int, earliest Bool) {
 	n Int = text:byteCount();
 	special Int = this._forward.special;
@@ -288,9 +300,9 @@ Int _findEnd(this Regex, text String, at Int, earliest Bool) {
 	return last;
 }
 
-// Where the reverse DFA `d`, run back from `end` no further than `low`,
-// last matched: the leftmost start of a match of its pattern that ends at
-// `end`; -1 if none.
+// Runs the reverse DFA `d` back from `end`, no further than `low`, and
+// returns the position where it last matched, which is the leftmost start
+// of a match of `d`'s pattern that ends at `end`; -1 when there is none.
 Int _scanBack(d _Table, classes List<I32>, endClass Int, text String, low Int, end Int) {
 	matchEnd Int = d.matchEnd;
 	ctx Int = d.startCtx;
@@ -322,8 +334,8 @@ Int _scanBack(d _Table, classes List<I32>, endClass Int, text String, low Int, e
 	return first;
 }
 
-// The leftmost-first match that starts at or after `at` (from 0), as its
-// start and end, both -1 where there is none.
+// The start and end of the leftmost-first match that starts at or after
+// `at` (counted from 0); both are -1 when there is no match.
 List<Int> _search(this Regex, text String, at Int) {
 	out List<Int> = List(Int);
 	fallback Bool = this._fallback;
@@ -358,7 +370,7 @@ Bool isMatch(this Regex, text String) {
 Match find(this Regex, text String) => this:findFrom(text, Int(1));
 
 /// The leftmost-first match that starts at or after byte `from` (counted
-/// from 1); an assertion still sees the bytes before it.
+/// from 1). Assertions still test the bytes before `from`.
 Match findFrom(this Regex, text String, from Int) {
 	at Int = from - 1;
 	if(at < 0) {
@@ -371,9 +383,10 @@ Match findFrom(this Regex, text String, from Int) {
 	return _span(span[Int(1)], span[Int(2)]);
 }
 
-// Every match, left to right, as the regex crate's find_iter yields them:
-// its start and end (from 0), two to a match. No two overlap, and no
-// empty match comes where the previous one ended.
+// Every match, left to right, as the Rust regex crate's find_iter yields
+// them, as a start and an end (counted from 0) for each match. No two
+// matches overlap, and no empty match starts where the previous match
+// ended.
 List<Int> _spans(this Regex, text String) {
 	out List<Int> = List(Int);
 	n Int = text:byteCount();
@@ -385,9 +398,10 @@ List<Int> _spans(this Regex, text String) {
 		if(at > n) {
 			return out;
 		}
-		// The match from `at`, or, where it is empty right at the last
-		// one's end, the one from the byte after; the DFAs are run here
-		// directly, so no list is made for each match.
+		// The match from `at`; when that match is empty and starts right at
+		// the previous match's end, the match from the next byte instead.
+		// The DFAs are run here directly, so no list is allocated for each
+		// match.
 		from Int = at;
 		s Int = _none();
 		e Int = _none();
@@ -427,8 +441,8 @@ List<Int> _spans(this Regex, text String) {
 	return out;
 }
 
-/// Every match, left to right. No two overlap, and no empty match comes
-/// right where the one before it ended.
+/// Every match, left to right. No two matches overlap, and no empty match
+/// starts right where the previous match ended.
 List<Match> findAll(this Regex, text String) {
 	spans List<Int> = this:_spans(text);
 	out List<Match> = List(Match);
@@ -439,9 +453,9 @@ List<Match> findAll(this Regex, text String) {
 	return out;
 }
 
-/// The number of matches `findAll` finds. A match that cannot be empty is
-/// counted from its end alone: only a match's start takes the reverse
-/// DFA.
+/// The number of matches that `findAll` finds. When the pattern cannot
+/// match the empty string, each match is counted from its end alone, which
+/// saves running the reverse DFA to find each match's start.
 Int count(this Regex, text String) {
 	if(this._nullable or this._fallback) {
 		return this:_spans(text):size() / 2;
@@ -460,8 +474,8 @@ Int count(this Regex, text String) {
 	return total;
 }
 
-// The groups of the match from `s` to `e` (from 0): every slot -1 where `s`
-// is -1.
+// The groups of the match from `s` to `e` (counted from 0); every slot is
+// -1 when `s` is -1.
 Captures _groupsOf(this Regex, text String, s Int, e Int) {
 	slots List<Int> = List((this._groups + 1) * 2, _none());
 	if(s >= 0) {
@@ -494,7 +508,7 @@ Captures capturesFrom(this Regex, text String, from Int) {
 	return this:_groupsOf(text, span[Int(1)], span[Int(2)]);
 }
 
-/// Every match, as `findAll` finds them, and its groups.
+/// Every match, as `findAll` finds them, each with its groups.
 List<Captures> capturesAll(this Regex, text String) {
 	spans List<Int> = this:_spans(text);
 	out List<Captures> = List(Captures);

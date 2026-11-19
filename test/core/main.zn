@@ -22,19 +22,21 @@ Int firstAbove(values List<Int>, limit Int) {
 	return Int(0);
 }
 
-/// A value type that holds a list, which is legal since a `List` is a value.
+/// A value type that holds a list; a value type may hold a `List` because a
+/// `List` is a value.
 type Shelf = struct {
 	labels List<String>;
 }
 Shelf(labels List<String>) => init{ labels; }
 
-/// An owner, which a `ListRef` holds and a `List` cannot.
+/// An owner type: a `ListRef` can hold owners, and a `List` cannot.
 type Jar = #struct {
 	beans Int;
 }
 Jar(beans Int) => init{ beans; }
 
-/// A worker's state: steps taken, up to a limit.
+/// A worker's state: the number of steps taken, and the number of steps
+/// after which the worker stops.
 type Steps = struct {
 	taken Int;
 	limit Int;
@@ -52,7 +54,7 @@ Unit printUnlessStopped(this Console, stop Bool) mut {
 Unit main() {
 	console Console(@program$console);
 
-	// Int, Float and their operators.
+	// Int, Float and the operators on them.
 	res Float = Float(3.0) * 3.0;
 	console!check(res == 9.0);
 	console!check(Int(7) - Int(2) == 5);
@@ -75,7 +77,7 @@ Unit main() {
 	console!check(yes and true and ~(no or false) and true or no);
 	console!check(yes == true and false == no and ~(true == no));
 
-	// A literal operand on either side.
+	// Operators with a literal operand on either side.
 	console!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);
 	console!check(1.5 < Float(2.0) and 3.0 / Float(2.0) == 1.5);
 	console!check(Int(7) - 2 == 5 and Float(7.0) - 2.5 == 4.5);
@@ -90,8 +92,9 @@ Unit main() {
 	console!check(String(Int(42)) == "42");
 	console!check(String(Float(2.5)) == "2.5");
 
-	// A literal: a value interpolated into it is copied in, and its text
-	// escapes are read in its own text, never in that value.
+	// A string literal: a value interpolated into the literal is copied in,
+	// and escapes are read only in the literal's own text, never in the
+	// interpolated value.
 	console!check(String("say \%greeting!") == "say hello!");
 	console!check(String("\n") == String(@primitives$String.escaped("\n")));
 	console!check(String("\n") ~= String(@primitives$String("\n")));
@@ -120,7 +123,7 @@ Unit main() {
 	}
 	console!check(same);
 
-	// The thread pool, sized through the runtime.
+	// Setting the thread pool's size through the runtime.
 	refused Bool = Bool(false);
 	runtime!setThreads(Int(0)) ? e {
 		refused = Bool(true);
@@ -191,7 +194,7 @@ Unit main() {
 	words!push("b");
 	console!check(words[Int(1)] + words[Int(2)] == "ab");
 
-	// A List of n copies of one value.
+	// A List of n copies of a value.
 	zeros List<I32> = List(Int(1000), I32(0));
 	console!check(zeros:size() == 1000);
 	console!check(zeros[Int(1)] == 0 and zeros[Int(1000)] == 0);
@@ -205,7 +208,8 @@ Unit main() {
 	console!check(none:size() == 1 and none[Int(1)] == 8);
 	flags List<Bool> = List(Int(3), Bool(false));
 	console!check(flags:size() == 3 and ~flags[Int(3)]);
-	// Each copy owns its own bytes: changing one leaves the others.
+	// Each copy owns its own bytes: changing one copy leaves the other copies
+	// unchanged.
 	marks List<String> = List(Int(3), String("ab"));
 	marks[Int(2)] = marks[Int(2)] + "c";
 	console!check(marks[Int(1)] + marks[Int(2)] + marks[Int(3)] == "ababcab");
@@ -213,7 +217,8 @@ Unit main() {
 	nested[Int(1)]!push(Int(9));
 	console!check(nested[Int(1)]:size() == 3 and nested[Int(2)]:size() == 2);
 
-	// Removing from a List: in order, and by moving the last one in.
+	// Removing from a List: keeping the order, and by moving the last element
+	// into the gap.
 	console!check(list!remove(Int(2)) == 4);
 	console!check(list:size() == 4);
 	console!check(list[Int(2)] == 9);
@@ -227,7 +232,7 @@ Unit main() {
 	console!check(words:size() == 1);
 	console!check(words[Int(1)] == "c");
 
-	// A List is a value: a copy owns elements of its own.
+	// A List is a value: a copy of a List owns its own elements.
 	copied List<String> = words;
 	copied!push("d");
 	copied[Int(1)] = String("e");
@@ -279,7 +284,7 @@ Unit main() {
 	console!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
 	console!check(String(big) == "2147483647");
 
-	// U8: a byte that widens without its sign.
+	// U8: a byte that converts to `Int` as an unsigned value.
 	byte U8 = U8(200);
 	console!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
 	console!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
@@ -298,9 +303,9 @@ Unit main() {
 	abc!push(U8(99));
 	console!check(String(abc) == "abc" and String(List(U8)) == "");
 
-	// Ranges of a List: appended in one copy, compared and hashed; sorted
-	// (experiment); and a float read from a range of a string's bytes
-	// (experiment).
+	// Ranges of a List: appending a range in one copy, comparing and hashing
+	// ranges, sorting (experiment), and reading a float from a range of a
+	// string's bytes (experiment).
 	nums List<Int> = List(Int);
 	nums!push(Int(1));
 	nums!push(Int(2));
@@ -314,7 +319,7 @@ Unit main() {
 	console!check(nums[Int(1)] == 1 and nums[Int(2)] == 2 and nums[Int(3)] == 2 and nums[Int(5)] == 3);
 	abc!sort();
 	console!check(String(abc) == "abc");
-	// Bytes sort unsigned: 128 and 255 come after 127.
+	// Bytes sort as unsigned values: 128 and 255 come after 127.
 	mixed List<U8> = List(U8);
 	mixed!push(U8(255));
 	mixed!push(U8(1));
@@ -328,8 +333,8 @@ Unit main() {
 	console!check(nums:sameRange(Int(4), tail, Int(3), Int(1)) and ~nums:sameRange(Int(4), tail, Int(1), Int(2)));
 	console!check(nums:hashRange(Int(2), Int(2)) == nums:hashRange(Int(2), Int(2)));
 	console!check(nums:hashRange(Int(4), Int(1)) == tail:hashRange(Int(1), Int(1)));
-	// copyRange: a range of another list copied over this one's, at either
-	// end, and a copy of nothing.
+	// copyRange: copying a range of another list over a range of this list,
+	// at either end of this list, and copying zero elements.
 	over List<Int> = List(Int);
 	o Int = Int(1);
 	o!to(6) { over!push(o * 10); }
@@ -339,8 +344,8 @@ Unit main() {
 	console!check(over[Int(6)] == 3 and over[Int(5)] == 50);
 	over!copyRange(1, tail, 1, 0);
 	console!check(over[Int(1)] == 10 and over:size() == 6);
-	// sortBy: indices from 1 into the keys, sorted stably by the key each
-	// names: the two indices of key 5 keep their order.
+	// sortBy: indices into the keys, counted from 1, sorted stably by the
+	// key at each index, so the two indices of key 5 keep their order.
 	keys List<Int> = List(Int);
 	keys!push(Int(5));
 	keys!push(Int(2));
@@ -393,13 +398,13 @@ Unit main() {
 	counts!push(big);
 	console!check(counts[Int(1)] == 7 and counts[Int(2)] == big);
 
-	// A call whose arguments are all literals takes Int or Float.
+	// A call whose arguments are all literals uses Int or Float.
 	console!check(Float(139968) == 139968.0 and Float(2.5) == 2.5);
 	console!check(String(5) == "5" and String(2.5) == "2.5");
 	console!check(Int(3) == 3 and I32(3) == 3);
 
-	// Workers: a step run until it returns false, with and without a wait,
-	// and spawned.
+	// Workers: a step that runs until it returns false, with and without a
+	// wait between steps, and a spawned worker.
 	steps Steps(5);
 	steps!work(Bool(this Steps) mut {
 		this.taken = this.taken + 1;

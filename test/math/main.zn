@@ -13,8 +13,8 @@ Unit check(this Console, ok Bool) mut {
 	return Unit();
 }
 
-/// Within a tolerance of the true value: an approximate function's last
-/// digit is the platform's (math.md §2.6).
+/// Whether `value` is within a tolerance of `expected`: the last digit of an
+/// approximate function's result depends on the platform (math.md §2.6).
 Bool near(value Float, expected Float) => abs(value - expected) < 0.000000000001;
 
 Unit main() {
@@ -79,7 +79,7 @@ Unit main() {
 	console!check(abs(pow(F32(2.0), F32(10.0)) - F32(1024.0)) < 0.001);
 	console!check(abs(hypot(F32(3.0), F32(4.0)) - F32(5.0)) < 0.00001);
 
-	// A call whose arguments are all literals takes Int or Float.
+	// A call whose arguments are all literals uses Int or Float.
 	console!check(bitAnd(12, 10) == 8 and bitOr(12, 10) == 14 and bitXor(12, 10) == 6);
 	console!check(bitNot(0) == ~Int(1));
 	console!check(shiftLeft(1, 65) == 2 and shiftRight(~Int(16), 2) == ~Int(4));
@@ -101,7 +101,7 @@ Unit main() {
 	console!check(String(5) == "5" and String(2.5) == "2.5");
 	console!check(Float(139968) == 139968.0);
 
-	// A typed operand keeps the call on its own width.
+	// An operand of a declared type keeps the call at that type's width.
 	x Int = Int(12);
 	y Float = Float(16.0);
 	console!check(bitAnd(x, 10) == 8 and bitAnd(10, x) == 8 and max(x, 3) == 12);

@@ -37,15 +37,16 @@ Unit to(this Int, end Int, body @concepts$Block) mut {
 }
 
 /// Runs a worker (control-flow.md §3.7): calls `step` on this subject, and
-/// again each time it returns `true`, until it returns `false`. A method
-/// for a subject of any type; it takes no block, so it may be spawned.
+/// calls it again each time `step` returns `true`, until `step` returns
+/// `false`. `work` is a method on a subject of any type; it takes no block, so
+/// a call to it may be spawned.
 Unit work(this S Type, step Bool[this S] mut) mut {
 	@controlflow$work(this, step);
 	return Unit();
 }
 
 /// Runs a worker as `work` does, waiting `every` between one step and the
-/// next; it does not wait before the first.
+/// next; it does not wait before the first step.
 Unit setInterval(this S Type, every Duration, step Bool[this S] mut) mut {
 	@controlflow$workEvery(this, every._nanoseconds._value, step);
 	return Unit();

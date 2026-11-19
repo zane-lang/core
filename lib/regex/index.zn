@@ -3,9 +3,10 @@ package regex;
 import core$;
 import math$;
 
-// The index of a DFA's states by their keys, while the DFA is built: open
-// addressing over a power of two slots, each key a range of one byte list
-// that every key is appended to, hashed and compared a word at a time.
+// The index of a DFA's states by their keys, used while the DFA is built: a
+// hash table with open addressing over a power-of-two number of slots. Every
+// key is appended to one shared byte list, and each slot holds the key's
+// range in that list. Keys are hashed and compared a word at a time.
 
 type _Slot = struct {
 	start I32;
@@ -24,7 +25,8 @@ type _Index = struct {
 	shift Int;
 }
 
-// The bits of a table with a power of two slots, at least `capacity`.
+// The exponent of the smallest power of two that is at least `capacity`,
+// from 1 to 62: a table with that many slots holds `capacity` keys.
 Int _tableBits(capacity Int) {
 	bits Int = Int(1);
 	bits!to(Int(62)) {
@@ -41,9 +43,10 @@ _Index(capacity Int) => init{
 	shift = Int(64) - _tableBits(capacity);
 }
 
-// The slot that holds the key with the bytes of `count` of `from` from
-// `start`, the keys being ranges of `keys`, or the empty slot where it
-// belongs; 0 if the table is full. An empty slot's start is 0.
+// The slot that holds the key made of the `count` bytes of `from` starting
+// at `start`, where every stored key is a range of `keys`. When no slot holds
+// that key, returns the empty slot where the key belongs, or 0 when the
+// table is full. An empty slot has the start 0.
 Int slotIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
 	capacity Int = this.slots:size();
 	index Int = shiftRightLogical(from:hashRange(start, count) * (Int(0) - Int(7046029254386353131)), this.shift) + 1;
@@ -53,8 +56,8 @@ Int slotIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
 		if(Int(slot.start) == 0) {
 			return index;
 		}
-		// `and` evaluates both sides: the bytes are compared only for a
-		// key of the same length.
+		// `and` evaluates both operands, so the bytes are compared only for
+		// a key of the same length.
 		if(Int(slot.length) == count) {
 			if(keys:sameRange(Int(slot.start), from, start, count)) {
 				return index;
@@ -68,8 +71,8 @@ Int slotIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
 	return Int(0);
 }
 
-// The value of the key with the bytes of `count` of `from` from `start`,
-// or -1 when there is none.
+// The value of the key made of the `count` bytes of `from` starting at
+// `start`, or -1 when no such key is stored.
 Int findIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
 	index Int = this:slotIn(keys, from, start, count);
 	if(index == 0) {
@@ -82,7 +85,7 @@ Int findIn(this _Index, keys List<U8>, from List<U8>, start Int, count Int) {
 	return Int(slot.value);
 }
 
-// The table doubled, each key placed again, once it is two thirds full.
+// Doubles the table once it is two thirds full, and places each key again.
 Unit grow(this _Index, keys List<U8>) mut {
 	old List<_Slot> = this.slots;
 	this.slots = List(old:size() * 2, _Slot(I32(0), I32(0), I32(0)));
@@ -97,7 +100,8 @@ Unit grow(this _Index, keys List<U8>) mut {
 	return Unit();
 }
 
-// `count` bytes of `keys` from `start` made a key with `value`.
+// Stores the `count` bytes of `keys` starting at `start` as a key with the
+// value `value`.
 Unit put(this _Index, keys List<U8>, start Int, count Int, value Int) mut {
 	if((this.entries + 1) * 3 > this.slots:size() * 2) {
 		this!grow(keys);

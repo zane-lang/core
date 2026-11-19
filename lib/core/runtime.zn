@@ -8,7 +8,7 @@ Runtime(runtime &@runtime$Runtime) => init{
 	_runtime = runtime;
 }
 
-/// The arguments the program was started with, without its own name.
+/// The arguments the program was started with, without the program's own name.
 List<String> arguments(this Runtime) {
 	raw @primitives$List<@primitives$String> = this._runtime:arguments();
 	args List<String> = List(String);
@@ -19,8 +19,8 @@ List<String> arguments(this Runtime) {
 	return args;
 }
 
-/// Sizes the thread pool to `count` threads, and aborts, leaving it as it
-/// was, when `count` is below one.
+/// Sets the thread pool's size to `count` threads. When `count` is below one,
+/// aborts and leaves the thread pool unchanged.
 Unit?Unit setThreads(this Runtime, count Int) mut {
 	this._runtime!setThreads(count._value) ? e {
 		abort Unit();
@@ -28,7 +28,8 @@ Unit?Unit setThreads(this Runtime, count Int) mut {
 	return Unit();
 }
 
-/// Sizes the thread pool to the hardware's concurrency.
+/// Sets the thread pool's size to the number of threads the hardware runs at
+/// once.
 Unit setThreadsAuto(this Runtime) mut {
 	this._runtime!setThreadsAuto();
 	return Unit();
