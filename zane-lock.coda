@@ -1,4 +1,5 @@
+zane-commit 6f21bc9c5c9c445c442daae2b9058c4bd98d65f6
+
 resolutions [
     key url commit
-    zane https://github.com/zane-lang/compiler 6f21bc9c5c9c445c442daae2b9058c4bd98d65f6
 ]
