@@ -32,7 +32,7 @@ Zane has 4 bytes
 |---|---|
 | `a + b` | joins two strings; either may be a literal |
 | `a == b`, `a ~= b` | compares the bytes |
-| `String(n)` | the text of an `Int`, `Float`, `I32` or `F32` |
+| `String(v)` | the text of an `Int`, `Float`, `I32`, `F32` or `Bool` |
 | `s:byteCount()` | the length in bytes |
 | `s:byteAt(i)` | the byte at position `i`, from 1, as a `U8`; a position outside stops the program |
 | `s:parseInt()`, `s:parseFloat()` | the number the text spells, or an abort ([Numbers](numbers.md#reading-numbers-from-text)) |

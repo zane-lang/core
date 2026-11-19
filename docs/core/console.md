@@ -44,7 +44,25 @@ Hello
 
 `Unit` is the type with one value, `Unit()`, returned by functions that have
 nothing else to return. `Bool` is `true` or `false`, made with `Bool(true)`,
-with the operators `and`, `or`, `~` (not), `==` and `~=`.
+with the operators `and`, `or`, `~` (not), `==` and `~=`. `String(b)` gives
+its text, `"true"` or `"false"`:
+
+```zane
+package hello;
+
+import core$;
+
+Unit main() {
+	console Console(@program$console);
+	small Bool = Int(1) < Int(2);
+	console!print("1 < 2 is " + String(small) + ", and its opposite " + String(~small));
+	return Unit();
+}
+```
+
+```output
+1 < 2 is true, and its opposite false
+```
 
 ## Source
 
