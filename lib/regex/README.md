@@ -4,8 +4,9 @@ Regular expressions over a string's bytes. A pattern is compiled once, then
 searched in time linear in the text: matching never backtracks, so no pattern
 can make a search take exponential time.
 
-How to use it, its verbs and its pattern syntax are on the Library pages:
-[`docs/regex.md`](../../docs/regex.md), also at <https://zane-lang.org/std/regex>.
+The Library pages describe how to use the package, its verbs and its pattern
+syntax: [`docs/regex.md`](../../docs/regex.md), also at
+<https://zane-lang.org/std/regex>.
 This file describes how the package searches.
 
 ## How it searches

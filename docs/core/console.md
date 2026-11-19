@@ -1,10 +1,10 @@
 # Console and runtime
 
-This page covers `Console`, which prints, and `Runtime`, which gives the program's arguments and sizes its thread pool.
+This page covers `Console`, which prints, and `Runtime`, which provides the program's arguments and sets the size of its thread pool.
 
 Both wrap a capability the program receives from the language:
 `@program$console` and `@program$runtime`. Only the program's own package can
-name these, so other code prints or reads arguments only when it is handed a
+name these, so other code prints or reads arguments only when it is given a
 `Console` or `Runtime`.
 
 ```zane
@@ -37,15 +37,15 @@ Hello
 | `console!print(text)` | writes `text` and a newline to standard output |
 | `Runtime(@program$runtime)` | the program's runtime |
 | `runtime:arguments()` | the command-line arguments, without the program's name, as a `List<String>` |
-| `runtime!setThreads(count)` | sizes the thread pool to `count` threads; aborts with `Unit` when `count` is below one |
-| `runtime!setThreadsAuto()` | sizes the thread pool to the hardware's concurrency |
+| `runtime!setThreads(count)` | sets the thread pool's size to `count` threads; aborts with `Unit` when `count` is below one |
+| `runtime!setThreadsAuto()` | sets the thread pool's size to the number of threads the hardware runs at once |
 
 ## `Unit` and `Bool`
 
 `Unit` is the type with one value, `Unit()`, returned by functions that have
-nothing else to return. `Bool` is `true` or `false`, made with `Bool(true)`,
-with the operators `and`, `or`, `~` (not), `==` and `~=`. `String(b)` gives
-its text, `"true"` or `"false"`:
+nothing else to return. A `Bool` is `true` or `false`, made with `Bool(true)`
+or `Bool(false)`, and has the operators `and`, `or`, `~` (not), `==` and `~=`.
+`String(b)` returns the text `"true"` or `"false"`:
 
 ```zane
 package hello;

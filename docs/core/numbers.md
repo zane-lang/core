@@ -4,7 +4,7 @@ This page covers `core`'s number types, their operators, the conversions between
 
 ## The types
 
-| Type | What it is | Use it for |
+| Type | Description | Use it for |
 |---|---|---|
 | `Int` | a 64-bit signed integer | counts, indices, loops, general arithmetic |
 | `Float` | a 64-bit floating-point number | general arithmetic with fractions |
@@ -13,9 +13,9 @@ This page covers `core`'s number types, their operators, the conversions between
 | `U8` | an unsigned byte, 0 to 255 | bytes; it has comparisons but no arithmetic |
 
 `Int` and `Float` are the defaults: an integer literal becomes an `Int`, and a
-float literal a `Float`, unless the call it is passed to asks for another
-number type. A parameter of type `I32` takes an integer literal as an `I32`,
-and one of type `F32` a float literal as an `F32`.
+float literal a `Float`, unless the literal is passed to a parameter of
+another number type. A parameter of type `I32` takes an integer literal as an
+`I32`, and a parameter of type `F32` takes a float literal as an `F32`.
 
 ## Operators
 
@@ -58,14 +58,15 @@ overflow: `I32(2147483647) + 1` is the smallest `I32`.
 
 ## Conversions
 
-No number type converts to another on its own. The conversions are
-constructors. Each one that drops part of the number has a name that says
-how, except `Float(i)` from an `Int`, which rounds:
+Numbers are never converted implicitly; each conversion is a constructor call.
+Every conversion that can drop part of the number has a name, such as
+`truncate` or `wrap`, that describes what is dropped. The one exception is
+`Float(i)` for an `Int`, which rounds:
 
 | Conversion | Result |
 |---|---|
 | `Float(i)` for an `I32` or `F32` | the same number as a `Float` |
-| `Float(i)` for an `Int` | the nearest `Float`, which may differ from it beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
+| `Float(i)` for an `Int` | the nearest `Float`, which may differ from the `Int` beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
 | `Int(i)` for an `I32` or `U8` | the same number as an `Int` |
 | `Int.truncate(f)` | an `Int`: the `Float` rounded toward zero, held to the `Int` range |
 | `I32.wrap(i)` | the low 32 bits of an `Int` |
@@ -99,8 +100,8 @@ Unit main() {
 ## Reading numbers from text
 
 `text:parseInt()` reads an integer, written with digits and an optional `-`,
-and `text:parseFloat()` an integer or a float. Both abort with `Unit` when the
-text spells no number, or one too large for the type:
+and `text:parseFloat()` reads an integer or a float. Both abort with `Unit`
+when the text is not a number, or is a number too large for the type:
 
 ```zane
 package hello;
@@ -123,8 +124,8 @@ Unit main() {
 ```
 
 `text:parseFloat(start, count)` reads only the `count` bytes from byte
-`start` (counted from 1), without copying them out of `text`. Its source
-marks it as an experiment, so it may change or go away.
+`start` (counted from 1), without copying them out of `text`. The source marks
+this overload as an experiment, so it may change or go away.
 
 The [`math`](../math.md) package adds square roots, powers, trigonometry,
 rounding and bit operations.

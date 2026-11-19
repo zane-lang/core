@@ -45,12 +45,12 @@ three
 4 words
 ```
 
-`compile` aborts with a `RegexError` when the pattern is malformed; its
-`message` says what is wrong and `at` is the byte of the pattern where it was
-found. A pattern is a string literal, so a backslash in it is written `\\`:
+`compile` aborts with a `RegexError` when the pattern is malformed: the
+error's `message` describes the problem, and `at` is the position of the
+pattern byte where `compile` found it. A pattern is a string literal, so a backslash in it is written `\\`:
 `"\\d+"` is the pattern `\d+`.
 
-| Verb | What it gives |
+| Verb | Result |
 |---|---|
 | `compile(pattern)` | the `Regex`, or an abort with a `RegexError` |
 | `r:isMatch(text)` | whether `r` matches anywhere in `text` |
@@ -65,12 +65,12 @@ found. A pattern is a string literal, so a backslash in it is written `\\`:
 A `Match` is a position and a length in bytes, counted from 1 as
 `byteAt` counts: `m.start` is its first byte, `m.count` its number of bytes,
 `m:end()` the byte after it, and `m:text(text)` the text it covers. When
-nothing is found, `start` is 0, which `m:found()` tests.
+nothing is found, `start` is 0, and `m:found()` returns `false`.
 
 `findAll` and `count` take matches left to right without overlapping. An
-empty match never comes right where the previous match ended. `findFrom` and
-`capturesFrom` start the search at a byte, but an assertion such as `\b`
-still sees the bytes before it.
+empty match is never found at the position where the previous match ended.
+`findFrom` and `capturesFrom` start the search at a byte, but an assertion
+such as `\b` still sees the bytes before that byte.
 
 ## Groups
 
@@ -106,7 +106,7 @@ A `Captures` holds group 0, the whole match, then each group in the order its
 `(` opens. `c:group(k)` is group `k`'s match and `c:named(name)` the match of
 the group called `name`. A group that took no part in the match, a group the
 pattern does not have, and every group of a search that found nothing give a
-`Match` whose `start` is 0. `c:found()` says whether there was a match, and
+`Match` whose `start` is 0. `c:found()` returns whether there was a match, and
 `c:size()` counts the groups, group 0 included.
 
 ## Pattern syntax
@@ -141,13 +141,14 @@ The flags are `i`, matching ASCII letters in either case, `m`, making `^` and
 newline. A `-` turns the flags after it off: `(?i)a(?-i)b` matches `Ab` but
 not `AB`.
 
-The pattern is bytes, and so is the text: the classes, the cases and the word
-bytes are ASCII's. A byte of a UTF-8 character outside ASCII matches only
+Both the pattern and the text are bytes: the classes, the `i` flag's letter
+cases and the word bytes are ASCII's. A byte of a UTF-8 character outside ASCII matches only
 itself, so a literal non-ASCII character matches, but `.` takes one byte of it.
 
 Not supported: look-ahead and look-behind (`(?=`, `(?!`, `(?<=`, `(?<!`),
 back-references, possessive repeats, atomic groups, Unicode classes, and the
-`x` flag. Each is refused with a `RegexError` rather than read some other way.
+`x` flag. `compile` refuses each of them with a `RegexError` instead of reading
+it some other way.
 
 A repeat of a part that can itself match the empty string, such as `(a*)*` or
 `(?:x?)+`, may choose a different match, or different groups, from a

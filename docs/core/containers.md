@@ -57,19 +57,19 @@ Unit main() {
 | `l!remove(i)` | takes out the element at `i` and returns it, shifting the later ones down |
 | `l!swapRemove(i)` | takes out the element at `i` and moves the last one into its place: faster, but the order changes |
 | `l!appendRange(from, start, count)` | copies `count` elements of `from`, from `start`, onto the end |
-| `l!appendOwn(start, count)` | the same, from the list itself |
-| `l!copyRange(at, from, start, count)` | copies `count` elements of `from`, from `start`, over the list's own from `at` (experimental) |
+| `l!appendOwn(start, count)` | copies `count` elements of the list itself, from `start`, onto the end |
+| `l!copyRange(at, from, start, count)` | copies `count` elements of `from`, from `start`, over the list's own elements, starting at `at` (experimental) |
 | `l!sort()` | sorts the elements in place, ascending, for lists of `Int`, `I32` or `U8` (experimental) |
 | `l:sameRange(start, other, otherStart, count)` | whether two ranges hold the same elements, for lists of integers |
 | `l:hashRange(start, count)` | a hash of a range, for lists of integers |
 
 `appendRange`, `appendOwn` and `copyRange` are for elements that own no
 memory of their own, such as numbers. `l!sortBy(keys)` sorts a `List<I32>`
-of positions by the keys they name. The source marks `copyRange`, `sort` and
+of positions into `keys` by the key at each position. The source marks `copyRange`, `sort` and
 `sortBy` as experiments, so they may change or go away.
 
-A `List` is a value, so copying one copies its elements, and a value type
-may hold one as a field.
+A `List` is a value, so copying a list copies its elements, and a value type
+may hold a `List` as a field.
 
 ## `Array`
 
@@ -101,9 +101,9 @@ Thu
 
 ## `ListRef`
 
-Owners of a reference type (a `#struct`) go in a `ListRef`. It moves its
-elements as it grows, so nothing may refer to them: they are moved in, and
-`remove` and `swapRemove` move one out, as a `^T`.
+Owners of a reference type (a `#struct`) go in a `ListRef`. A `ListRef` moves
+its elements as it grows, so nothing may refer to an element: elements are
+moved in, and `remove` and `swapRemove` move an element out, as a `^T`.
 
 ```zane
 package hello;
@@ -135,8 +135,9 @@ Unit main() {
 
 An `ArrayRef` is a fixed-size container that is itself a reference type: it
 has one owner, is never copied, and its elements stay where they are.
-`ArrayRef(values)` builds one from an array literal, borrowing and copying
-each element, so its elements are values such as numbers:
+`ArrayRef(values)` builds an `ArrayRef` from an array literal by borrowing and
+copying each element, so the elements of an `ArrayRef` built this way are
+values such as numbers:
 
 ```zane
 package hello;
@@ -156,9 +157,9 @@ Unit main() {
 64 in 3 cells
 ```
 
-`ArrayRef.roaming(values)` takes each element instead, so an owner of a
-reference type moves in, and a value is copied. Its elements stay where they
-are, so they are changed in place:
+`ArrayRef.roaming(values)` takes each element instead: an owner of a
+reference type is moved in, and a value is copied. The elements stay where
+they are, so code changes them in place:
 
 ```zane
 package hello;

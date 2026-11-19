@@ -5,8 +5,8 @@ programming language, written in Zane.
 
 The language itself provides only machine-level building blocks (the
 `@primitives$`, `@operators$` and `@controlflow$` intrinsics). Everything you
-normally write with, such as `Int`, `String`, `List`, `if` and loops, is
-declared here, in ordinary Zane source you can read.
+normally write programs with, such as `Int`, `String`, `List`, `if` and loops,
+is declared in this repository, in ordinary Zane source you can read.
 
 This repository holds three library packages:
 
@@ -15,11 +15,11 @@ This repository holds three library packages:
 - **`math`** ([`lib/math/`](lib/math/)): math functions over `core`'s `Int`
   and `Float`, and over the narrow `I32` and `F32`.
 - **`regex`** ([`lib/regex/`](lib/regex/)): regular expressions over a
-  string's bytes, with groups and anchors, searched in linear time. Its
-  syntax and verbs are in [`docs/regex.md`](docs/regex.md).
+  string's bytes, with groups and anchors, searched in linear time.
+  [`docs/regex.md`](docs/regex.md) describes its syntax and verbs.
 
-The reader pages for these packages are in [`docs/`](docs/README.md), which
-the Zane website serves as its Library section.
+The documentation pages for these packages are in [`docs/`](docs/README.md),
+and the Zane website publishes them as its Library section.
 
 ## Using it
 
@@ -30,8 +30,8 @@ command. `std` publishes no prebuilt objects, so it is compiled from source:
 zane add https://github.com/zane-lang/std --from-source
 ```
 
-Then import it. `import core$;` makes its names usable directly; `import math;`
-keeps the `math$` prefix:
+Then import its packages. `import core$;` makes `core`'s names usable without a
+prefix; `import math;` keeps the `math$` prefix:
 
 ```zane
 package hello;
@@ -61,11 +61,12 @@ Unit main() {
 | [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int` and `I32`; the float functions also over `F32` |
 | [`regex/`](lib/regex/) | `compile`, which makes a `Regex`, and its `find`, `findAll`, `count`, `isMatch` and `captures`; `Match` and `Captures` |
 
-A program is handed its console and runtime as `@program$console` and
-`@program$runtime`, and wraps them in `Console` and `Runtime`. Code it does not
-pass them to cannot print or read the arguments.
+A program receives its console and runtime as `@program$console` and
+`@program$runtime`, and wraps them in `Console` and `Runtime` values. Code that
+the program does not pass them to cannot print or read the arguments.
 
-The rules these follow are in the [specification](https://github.com/zane-lang/spec):
+The [specification](https://github.com/zane-lang/spec) states the rules these
+packages follow:
 [`control-flow.md`](https://github.com/zane-lang/spec/blob/main/spec/control-flow.md)
 for the control flow, [`generics.md`](https://github.com/zane-lang/spec/blob/main/spec/generics.md)
 for the containers, [`math.md`](https://github.com/zane-lang/spec/blob/main/spec/math.md)
@@ -75,9 +76,9 @@ for the console and runtime.
 ## Testing
 
 Each package has a test package in [`test/`](test/) that imports it the way a
-user does and prints `yes` for every check that holds. They are also the
-largest collection of working Zane code, and a good place to see how each
-verb is used.
+user does and prints `yes` for every check that holds. The test packages are
+also the largest collection of working Zane code, and a good place to see how
+each verb is used.
 
 ```sh
 zane test
@@ -86,12 +87,13 @@ zane test
 A check that fails prints `no` and the run carries on, so `zane test` still
 reports the package as passed: read the output for any `no`.
 
-`zane test` uses the compiler `core` pins. When no release archive of that
-version exists for your platform, point `ZANE_COMPILER` at a newer `zanec`.
+`zane test` uses the compiler pinned in `zane.coda`. When no release archive of
+that version exists for your platform, point `ZANE_COMPILER` at a newer
+`zanec`.
 
 `zane.coda` pins the compiler version `core` is built with, and
-`zane-lock.coda` its exact commit. A change that needs a newer compiler moves
-both together, to a compiler that has a release tag.
+`zane-lock.coda` pins that compiler's exact commit. A change that needs a newer
+compiler updates both files together, to a compiler that has a release tag.
 
 ## License
 

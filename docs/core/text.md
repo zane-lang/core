@@ -34,20 +34,20 @@ Zane has 4 bytes
 | `a == b`, `a ~= b` | compares the bytes |
 | `String(v)` | the text of an `Int`, `Float`, `I32`, `F32` or `Bool` |
 | `s:byteCount()` | the length in bytes |
-| `s:byteAt(i)` | the byte at position `i`, from 1, as a `U8`; a position outside stops the program |
-| `s:parseInt()`, `s:parseFloat()` | the number the text spells, or an abort ([Numbers](numbers.md#reading-numbers-from-text)) |
+| `s:byteAt(i)` | the byte at position `i`, from 1, as a `U8`; a position outside the string stops the program |
+| `s:parseInt()`, `s:parseFloat()` | the number written in the text, or an abort ([Numbers](numbers.md#reading-numbers-from-text)) |
 | `String(bytes)` | a string of the bytes in a `List<U8>` |
 | `s:hashBytes()` | a hash of the bytes, equal for equal strings within one run |
 
 A literal passed as an argument becomes a `String`, and so does a literal
 next to a `String` operand of `+` or `==`. In a literal, `\n`, `\t`, `\r`,
 `\0` and `\\` are escapes, `\"` is a double quote, and `\%name` inserts the
-`String` symbol `name`.
+value of the `String` symbol `name`.
 
 ## Bytes
 
 A `String` is a sequence of bytes holding UTF-8. Positions count bytes from
-1, so a character outside ASCII takes several:
+1, so a character outside ASCII takes several positions:
 
 ```zane
 package hello;
@@ -83,10 +83,11 @@ hllo
 
 A `ByteSet` is a set of bytes, made from a `List<Bool>` of 256 flags (byte
 `b`'s flag at position `b + 1`) by `flags:byteSet()`. `s:findAny(from, count,
-set)` gives the first of the `count` positions from `from` whose byte is in
-the set, or 0, and `s:findPair(from, count, first, gap, second)` the first
-whose byte is in `first` and the byte `gap` after it in `second`. Both test
-many bytes at a time.
+set)` searches the `count` positions starting at `from`, and returns the first
+position whose byte is in `set`, or 0 when there is none.
+`s:findPair(from, count, first, gap, second)` returns the first position whose
+byte is in `first` and whose byte `gap` positions later is in `second`. Both
+functions test many bytes at a time.
 
 ```zane
 package hello;

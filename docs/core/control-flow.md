@@ -4,14 +4,14 @@ This page covers `core`'s branching, loops and workers, which are ordinary funct
 
 | Verb | What it does |
 |---|---|
-| `if(condition) { … }` | runs the block when `condition` holds, and returns whether it did |
+| `if(condition) { … }` | runs the block when `condition` holds, and returns a `Bool` that records whether the block ran |
 | `chain!elif(condition) { … }` | on the `Bool` an `if` returned: runs the block when no earlier branch ran and `condition` holds |
 | `chain:else() { … }` | runs the block when no branch of the chain ran |
 | `guard(condition)` | ends the block it is called in when `condition` holds |
 | `do() { … }` | runs the block once |
 | `i!to(end) { … }` | runs the block for each value of `i` up to `end`, advancing `i` |
-| `s!work(step)` | calls `step` on `s` until it returns `false` |
-| `s!setInterval(every, step)` | the same, waiting the `Duration` `every` between steps |
+| `s!work(step)` | calls `step` on `s` until `step` returns `false` |
+| `s!setInterval(every, step)` | works like `work`, and waits the `Duration` `every` between steps |
 
 ```zane
 package hello;
@@ -68,9 +68,9 @@ started with `spawn` to run in the background.
 
 A `Duration` is a span of time, a whole number of nanoseconds:
 `Duration.seconds(n)`, `Duration.milliseconds(n)` and `Duration.nanoseconds(n)`
-make one, and `d:nanoseconds()` reads it.
+make a `Duration`, and `d:nanoseconds()` returns its length in nanoseconds.
 
-The Learn pages explain [how these work](https://github.com/zane-lang/docs/blob/main/docs/tour/control-flow.md),
+The Learn pages explain [how these verbs work](https://github.com/zane-lang/docs/blob/main/docs/tour/control-flow.md),
 and the spec gives [the rules](https://github.com/zane-lang/spec/blob/main/spec/control-flow.md#3-branching-and-repetition).
 
 ## Source

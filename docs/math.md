@@ -2,7 +2,7 @@
 
 This page covers the `math` package: square roots, powers, trigonometry, rounding, and bit operations over `core`'s numbers.
 
-`math` declares functions, not methods, so they are called as
+`math` declares functions, not methods, so you call them as
 `math$sqrt(x)` after `import math;`, or as `sqrt(x)` after `import math$;`.
 
 ```zane
@@ -36,8 +36,8 @@ Unit main() {
 
 ## `Float` and `F32`
 
-These are exact: correctly rounded, and the same on every system, and at
-compile time as at run time.
+The functions in this table are exact: correctly rounded, and the same on
+every system and at compile time as at run time.
 
 | Function | Result |
 |---|---|
@@ -50,14 +50,14 @@ compile time as at run time.
 | `copySign(magnitude, sign)` | `magnitude` with the sign of `sign` |
 | `min(a, b)`, `max(a, b)` | the lesser, the greater; NaN when either is NaN |
 
-These are approximate, computed by the platform's C math library, so the last
-bits may differ between systems:
+The functions in this table are approximate: the platform's C math library
+computes them, so the last bits of a result may differ between systems:
 
 | Function | Result |
 |---|---|
 | `cbrt(x)` | the cube root |
-| `sin(x)`, `cos(x)`, `tan(x)` | of an angle in radians |
-| `asin(x)`, `acos(x)`, `atan(x)` | in radians |
+| `sin(x)`, `cos(x)`, `tan(x)` | the sine, cosine and tangent of an angle in radians |
+| `asin(x)`, `acos(x)`, `atan(x)` | the arcsine, arccosine and arctangent, in radians |
 | `atan2(y, x)` | the angle of the point (x, y), from -π to π |
 | `exp(x)`, `log(x)` | e to the power `x`; the natural logarithm |
 | `pow(base, exponent)` | `base` to the power `exponent` |
@@ -67,16 +67,16 @@ bits may differ between systems:
 
 | Function | Result |
 |---|---|
-| `abs(x)` | the magnitude; the most negative value gives itself back |
+| `abs(x)` | the magnitude; for the most negative value, that same value |
 | `min(a, b)`, `max(a, b)` | the lesser, the greater |
 | `bitAnd(a, b)`, `bitOr(a, b)`, `bitXor(a, b)` | each bit set in both, in either, in exactly one |
 | `bitNot(x)` | every bit flipped |
 | `shiftLeft(x, n)` | the bits moved `n` places up, zeros filling in |
-| `shiftRight(x, n)` | moved down, copies of the sign bit filling in |
-| `shiftRightLogical(x, n)` | moved down, zeros filling in |
-| `rotateLeft(x, n)`, `rotateRight(x, n)` | moved, the bits shifted out filling in at the other end |
+| `shiftRight(x, n)` | the bits moved `n` places down, copies of the sign bit filling in |
+| `shiftRightLogical(x, n)` | the bits moved `n` places down, zeros filling in |
+| `rotateLeft(x, n)`, `rotateRight(x, n)` | the bits moved `n` places, the bits shifted out filling in at the other end |
 | `popCount(x)` | the number of set bits |
-| `leadingZeros(x)`, `trailingZeros(x)` | the zero bits above the highest set bit, below the lowest; the width for zero |
+| `leadingZeros(x)`, `trailingZeros(x)` | the number of zero bits above the highest set bit, or below the lowest set bit; the full width when `x` is zero |
 
 Shift and rotate counts are taken modulo the width, 64 for `Int` and 32 for
 `I32`.
