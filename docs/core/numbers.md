@@ -12,14 +12,19 @@ This page covers `core`'s number types, their operators, the conversions between
 | `F32` | a 32-bit floating-point number | compact storage of fractions |
 | `U8` | an unsigned byte, 0 to 255 | bytes; it has comparisons but no arithmetic |
 
-`Int` and `Float` are the defaults: a bare integer literal passed to a
-function becomes an `Int`, and a float literal a `Float`.
+`Int` and `Float` are the defaults: an integer literal becomes an `Int`, and a
+float literal a `Float`, unless the call it is passed to asks for another
+number type. A parameter of type `I32` takes an integer literal as an `I32`,
+and one of type `F32` a float literal as an `F32`.
 
 ## Operators
 
 `Int`, `Float`, `I32` and `F32` each have `+`, `-`, `*`, `/`, `~` (negation),
 `==`, `~=`, `<`, `>`, `<=` and `>=`. A literal may stand on either side of an
-operator whose other operand is one of these types:
+operator whose other operand is one of these types, as long as it is the
+matching kind: an integer literal beside an `Int` or `I32`, a float literal
+beside a `Float` or `F32`. An operator does not convert its operands, so
+`Float(2.5) * 4` is an error; write `Float(2.5) * 4.0`:
 
 ```zane
 package hello;
@@ -58,7 +63,8 @@ constructors, and a lossy one has a name that says what it does:
 
 | Conversion | Result |
 |---|---|
-| `Float(i)` for an `Int`, `I32` or `F32` | the same number as a `Float` |
+| `Float(i)` for an `I32` or `F32` | the same number as a `Float` |
+| `Float(i)` for an `Int` | the nearest `Float`, which differs beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
 | `Int(i)` for an `I32` or `U8` | the same number as an `Int` |
 | `Int.truncate(f)` | an `Int`: the `Float` rounded toward zero |
 | `I32.wrap(i)` | the low 32 bits of an `Int` |
