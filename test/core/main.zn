@@ -89,6 +89,8 @@ Unit main() {
 	console!check("say " + greeting == "say hello");
 	console!check(String(Int(42)) == "42");
 	console!check(String(Float(2.5)) == "2.5");
+	console!check(String(yes) == "true" and String(no) == "false");
+	console!check("ok: " + String(Int(1) < Int(2)) == "ok: true");
 
 	// A literal: a value interpolated into it is copied in, and its text
 	// escapes are read in its own text, never in that value.
