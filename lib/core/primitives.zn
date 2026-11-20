@@ -44,7 +44,8 @@ implicit Int(v @primitives$I64) => init{
 }
 implicit Int(v @concepts$Int) => Int(@primitives$I64(v));
 implicit @primitives$I64(v Int) => v._value;
-/// `v` rounded toward zero, held to the range of an `Int`.
+/// Rounds `v` toward zero. A result outside the range of an `Int` is clamped
+/// to the nearest `Int`.
 Int.truncate(v Float) => Int(@primitives$I64.truncate(v._value));
 Int.truncate(v F32) => Int(@primitives$I64.truncate(v._value));
 
@@ -128,7 +129,7 @@ I32.truncate(v Float) => I32(@primitives$I32.truncate(v._value));
 I32.truncate(v @concepts$Float) => I32.truncate(Float(v));
 /// Exact: every `I32` is an `Int`.
 Int(v I32) => Int(@primitives$I64(v._value));
-/// Exact: every `U8` is an `I32` in 0..255.
+/// Exact: every `U8` converts to an `I32` from 0 to 255.
 I32(v U8) => I32(@primitives$I32(v._value));
 
 I32 ~(v I32) => I32(@operators$negate(v._value));
@@ -221,19 +222,20 @@ Bool <(left @concepts$Float, right F32) => F32(left) < right;
 
 
 // Hex
-/// The digits of `this` in base 16, lowercase, with no leading zeros and a
+/// Writes `this` in base 16 with lowercase digits, no leading zeros, and a
 /// `-` before a negative number: `Int(255):hex()` is `ff`.
 String hex(this Int) => _hex(this, Int(1));
 String hex(this I32) => _hex(Int(this), Int(1));
-/// Always two digits, as a byte is written: `U8(10):hex()` is `0a`.
+/// Writes the byte as exactly two base-16 digits: `U8(10):hex()` is `0a`.
 String hex(this U8) => _hex(Int(this), Int(2));
 
-/// The base-16 digits of `value`, at least `width` of them, after a `-` when
-/// it is negative.
+/// Writes `value` in base 16 with at least `width` digits, after a `-` when
+/// `value` is negative.
 String _hex(value Int, width Int) {
-	// Worked on the value made negative, since every `Int` has a negative of
-	// the same size, including the smallest, and division rounds toward
-	// zero: the digits come lowest first.
+	// The loop works on the negative of `value`, because every `Int`, the
+	// smallest included, has a negative `Int` of the same size, while the
+	// smallest `Int` has no positive one. Division rounds toward zero, and
+	// the loop produces the digits lowest first.
 	n Int = value;
 	if(0 < value) {
 		n = ~value;
@@ -263,7 +265,8 @@ String _hex(value Int, width Int) {
 	}
 	return String(text);
 }
-/// The byte that writes a digit from 0 to 15: `0`-`9`, then `a`-`f`.
+/// Returns the character byte for a base-16 digit from 0 to 15: `0` to `9`,
+/// then `a` to `f`.
 U8 _hexDigit(digit Int) {
 	if(digit < 10) {
 		return U8.wrap(digit + 48);
@@ -337,8 +340,9 @@ Float?Unit parseFloat(this String) {
 	return Float(value);
 }
 
-/// `parseFloat` on the `count` bytes from byte `start`, counted from 1 as
-/// `byteAt` counts, without copying them out first.
+/// Runs `parseFloat` on the `count` bytes starting at byte `start`, without
+/// copying those bytes out first. Bytes are counted from 1, as `byteAt`
+/// counts them.
 Float?Unit parseFloat(this String, start Int, count Int) {
 	value @primitives$F64 = this._value:parseF64At(start._value, count._value) ? e {
 		abort Unit();

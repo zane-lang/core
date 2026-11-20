@@ -3,9 +3,10 @@ package test;
 import core$;
 import regex$;
 
-/// The checks a test program has run. Each prints `yes` or `no` as it runs,
-/// and `finish` aborts when any failed, naming them, so the program ends
-/// with a failing status and `zane test` fails.
+/// Records the checks a test program runs. Each check prints `yes` or `no`
+/// as it runs. `finish` aborts when any check failed and lists the failed
+/// checks' numbers, so the program exits with a failing status and
+/// `zane test` fails.
 type Checks = #struct {
 	_console Console;
 	_count Int;
@@ -20,14 +21,14 @@ Checks() => init{
 	_failed = String("");
 }
 
-/// A check that passed.
+/// Records a check that passed and prints `yes`.
 Unit pass(this Checks) mut {
 	this._count = this._count + 1;
 	this._console!print("yes");
 	return Unit();
 }
 
-/// A check that failed, reported as `report`.
+/// Records a check that failed and prints `report`.
 Unit fail(this Checks, report String) mut {
 	this._count = this._count + 1;
 	this._failures = this._failures + 1;
@@ -36,7 +37,8 @@ Unit fail(this Checks, report String) mut {
 	return Unit();
 }
 
-/// Passes when `ok` holds, and fails as `no` otherwise.
+/// Records a passed check when `ok` is true, and otherwise a failed check
+/// that prints `no`.
 Unit check(this Checks, ok Bool) mut {
 	ran Bool = if(ok) {
 		this!pass();
@@ -47,7 +49,8 @@ Unit check(this Checks, ok Bool) mut {
 	return Unit();
 }
 
-/// Aborts, naming the checks that failed, when any did.
+/// Aborts when any check failed, with a message that counts the failed
+/// checks and lists their numbers.
 Unit?@primitives$String finish(this Checks) {
 	if(this._failures > 0) {
 		abort @primitives$String(String(this._failures) + " of " + String(this._count) + " checks failed:" + this._failed);

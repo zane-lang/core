@@ -16,24 +16,27 @@ Int size(this Array<T Type, n @concepts$Int>) => Int(n);
 type ArrayRef<T Type, n @concepts$Int> = #struct {
 	_value @primitives$ArrayRef<T, n>;
 }
-/// From an array literal, each element borrowed and copied in: values, or
-/// `&` values for an `ArrayRef<&T, n>` (generics.md §8.4).
+/// Builds an `ArrayRef` from an array literal by copying each element in. The
+/// elements are values, or `&` values for an `ArrayRef<&T, n>` (generics.md
+/// §8.4).
 ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef(values);
 }
-/// From an array literal, each element taken: an owner of a reference type
-/// moves in, and a value is copied.
+/// Builds an `ArrayRef` of owners from an array literal by taking each
+/// element: an owner of a reference type is moved in, and a value is copied
+/// in.
 ArrayRef<T, n>.roaming(values @concepts$Array<^T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef.roaming(values);
 }
-/// From an array literal, a reference to each element: a settled owner
-/// mints one, and an `&` value is copied.
+/// Builds an `ArrayRef` of references from an array literal, one reference
+/// per element: a settled owner mints a new reference, and an `&` value is
+/// copied in.
 ArrayRef<&T, n>.refs(values @concepts$Array<&T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef.refs(values);
 }
-/// `n` elements, each made by calling `make` with its position, counted
-/// from 1, in order: `ArrayRef.fill(3, Int(i Int) => i * i)` holds 1, 4
-/// and 9.
+/// Builds an `ArrayRef` of `n` elements by calling `make` once per position,
+/// in order, with the position counted from 1:
+/// `ArrayRef.fill(3, Int(i Int) => i * i)` holds 1, 4 and 9.
 ArrayRef<T, n>.fill(n @concepts$Int, make ^T Type[Int]) => init{
 	_value = @primitives$ArrayRef.fill(n, make);
 }
