@@ -6,7 +6,7 @@ The language itself provides only machine-level building blocks, the
 compiler's intrinsics. `Int`, `String`, `List`, `if`, loops and printing are
 declared in `std`, in ordinary Zane source you can read.
 
-1. [core](core/README.md): numbers, text, containers, control flow, the console
+1. [core](core/README.md): numbers, text, containers, control flow, the console, worker pools
 2. [math](math.md): square roots, powers, trigonometry, rounding, bit operations
 3. [regex](regex.md): regular expressions with groups, searched in linear time
 

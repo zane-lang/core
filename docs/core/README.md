@@ -10,3 +10,4 @@ prefix.
 3. [Containers](containers.md): `List`, `Array`, `ListRef`, `ArrayRef`
 4. [Control flow](control-flow.md): `if`, `elif`, `else`, `guard`, `do`, `to`, workers and `Duration`
 5. [Console and runtime](console.md): `Console`, `Runtime`, `Unit` and `Bool`
+6. [Worker pools](workers.md): `WorkerPool` and `EventSource`
