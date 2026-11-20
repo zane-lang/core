@@ -62,7 +62,8 @@ countdown at 0
 
 A step is a lambda that takes the subject as `this` and is `mut`, so it can
 change the subject. `work` and `setInterval` take no block, so they may be
-started with `spawn` to run in the background.
+started with `spawn` to run in the background. To run many workers at once, each on an element of
+its own, use a [worker pool](workers.md).
 
 ## `Duration`
 
