@@ -124,8 +124,7 @@ Unit main() {
 ```
 
 `text:parseFloat(start, count)` reads only the `count` bytes from byte
-`start` (counted from 1), without copying them out of `text`. The source marks
-this overload as an experiment, so it may change or go away.
+`start` (counted from 1), without copying them out of `text`.
 
 The [`math`](../math.md) package adds square roots, powers, trigonometry,
 rounding and bit operations.
