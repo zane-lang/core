@@ -2,12 +2,54 @@ package test;
 
 import core$;
 
-Unit check(this Console, ok Bool) mut {
+/// The checks a test program has run. Each prints `yes` or `no` as it runs,
+/// and `finish` aborts when any failed, naming them, so the program ends
+/// with a failing status and `zane test` fails.
+type Checks = #struct {
+	_console Console;
+	_count Int;
+	_failures Int;
+	_failed String;
+}
+
+Checks() => init{
+	_console = Console(@program$console);
+	_count = Int(0);
+	_failures = Int(0);
+	_failed = String("");
+}
+
+/// A check that passed.
+Unit pass(this Checks) mut {
+	this._count = this._count + 1;
+	this._console!print("yes");
+	return Unit();
+}
+
+/// A check that failed, reported as `report`.
+Unit fail(this Checks, report String) mut {
+	this._count = this._count + 1;
+	this._failures = this._failures + 1;
+	this._failed = this._failed + " " + String(this._count);
+	this._console!print(report);
+	return Unit();
+}
+
+/// Passes when `ok` holds, and fails as `no` otherwise.
+Unit check(this Checks, ok Bool) mut {
 	ran Bool = if(ok) {
-		this!print("yes");
+		this!pass();
 	}
 	ran:else() {
-		this!print("no");
+		this!fail("no");
+	}
+	return Unit();
+}
+
+/// Aborts, naming the checks that failed, when any did.
+Unit?@primitives$String finish(this Checks) {
+	if(this._failures > 0) {
+		abort @primitives$String(String(this._failures) + " of " + String(this._count) + " checks failed:" + this._failed);
 	}
 	return Unit();
 }
@@ -41,84 +83,84 @@ type Steps = struct {
 }
 Steps(limit Int) => init{ taken = Int(0); limit; }
 
-Unit printUnlessStopped(this Console, stop Bool) mut {
+Unit printUnlessStopped(this Checks, stop Bool) mut {
 	do() {
 		guard(stop);
-		this!print("yes");
+		this!pass();
 	}
 	return Unit();
 }
 
-Unit main() {
-	console Console(@program$console);
+Unit?@primitives$String main() {
+	checks Checks();
 
 	// Int, Float and their operators.
 	res Float = Float(3.0) * 3.0;
-	console!check(res == 9.0);
-	console!check(Int(7) - Int(2) == 5);
-	console!check(Int(2) < 3 and Int(3) > 2);
-	console!check(Int(3) <= 3 and Int(4) >= 3 and Int(4) ~= 3);
-	console!check(Int(7) / 2 == 3);
-	console!check(Float(Int(7)) / Float(Int(2)) == 3.5);
-	console!check(Float(Int(2)) == 2.0);
-	console!check(Int.truncate(Float(2.75)) == 2);
-	console!check(~Float(1.5) < 0.0);
+	checks!check(res == 9.0);
+	checks!check(Int(7) - Int(2) == 5);
+	checks!check(Int(2) < 3 and Int(3) > 2);
+	checks!check(Int(3) <= 3 and Int(4) >= 3 and Int(4) ~= 3);
+	checks!check(Int(7) / 2 == 3);
+	checks!check(Float(Int(7)) / Float(Int(2)) == 3.5);
+	checks!check(Float(Int(2)) == 2.0);
+	checks!check(Int.truncate(Float(2.75)) == 2);
+	checks!check(~Float(1.5) < 0.0);
 
 	// Bool algebra.
 	yes Bool = Bool(true);
 	no Bool = Bool(false);
-	console!check(yes and ~no);
-	console!check(no or yes);
-	console!check(~(yes and no));
-	console!check(~(no or no));
-	console!check(Int(1) < 2 or Int(2) < 1 and Int(3) < 1);
-	console!check(yes and true and ~(no or false) and true or no);
-	console!check(yes == true and false == no and ~(true == no));
+	checks!check(yes and ~no);
+	checks!check(no or yes);
+	checks!check(~(yes and no));
+	checks!check(~(no or no));
+	checks!check(Int(1) < 2 or Int(2) < 1 and Int(3) < 1);
+	checks!check(yes and true and ~(no or false) and true or no);
+	checks!check(yes == true and false == no and ~(true == no));
 
 	// A literal operand on either side.
-	console!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);
-	console!check(1.5 < Float(2.0) and 3.0 / Float(2.0) == 1.5);
-	console!check(Int(7) - 2 == 5 and Float(7.0) - 2.5 == 4.5);
-	console!check(Int(~3) + 5 == 2 and ~1.5 < Float(0.0));
-	console!check(~(yes == no));
-	console!check(yes ~= no);
+	checks!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);
+	checks!check(1.5 < Float(2.0) and 3.0 / Float(2.0) == 1.5);
+	checks!check(Int(7) - 2 == 5 and Float(7.0) - 2.5 == 4.5);
+	checks!check(Int(~3) + 5 == 2 and ~1.5 < Float(0.0));
+	checks!check(~(yes == no));
+	checks!check(yes ~= no);
 
 	// String.
 	greeting String = String("hello");
-	console!check(greeting + " world" == "hello world");
-	console!check("say " + greeting == "say hello");
-	console!check(String(Int(42)) == "42");
-	console!check(String(Float(2.5)) == "2.5");
+	checks!check(greeting + " world" == "hello world");
+	checks!check("say " + greeting == "say hello");
+	checks!check(String(Int(42)) == "42");
+	checks!check(String(Float(2.5)) == "2.5");
 
 	// A literal: a value interpolated into it is copied in, and its text
 	// escapes are read in its own text, never in that value.
-	console!check(String("say \%greeting!") == "say hello!");
-	console!check(String("\n") == String(@primitives$String.escaped("\n")));
-	console!check(String("\n") ~= String(@primitives$String("\n")));
+	checks!check(String("say \%greeting!") == "say hello!");
+	checks!check(String("\n") == String(@primitives$String.escaped("\n")));
+	checks!check(String("\n") ~= String(@primitives$String("\n")));
 	written String = String(@primitives$String("a\nb"));
-	console!check(String("[\%written]") == String(@primitives$String("[a\nb]")));
+	checks!check(String("[\%written]") == String(@primitives$String("[a\nb]")));
 
 	// Numbers read from text.
-	console!check((String("42"):parseInt() ?? Int(0)) == 42);
-	console!check((String("-7"):parseInt() ?? Int(0)) == ~Int(7));
-	console!check((String("4x"):parseInt() ?? Int(1)) == 1);
-	console!check((String("2.5"):parseInt() ?? Int(1)) == 1);
-	console!check((String("99999999999999999999"):parseInt() ?? Int(1)) == 1);
-	console!check((String("2.5"):parseFloat() ?? Float(0.0)) == 2.5);
-	console!check((String("-3"):parseFloat() ?? Float(0.0)) == ~Float(3.0));
-	console!check((String(" 1"):parseFloat() ?? Float(1.5)) == 1.5);
+	checks!check((String("42"):parseInt() ?? Int(0)) == 42);
+	checks!check((String("-7"):parseInt() ?? Int(0)) == ~Int(7));
+	checks!check((String("4x"):parseInt() ?? Int(1)) == 1);
+	checks!check((String("2.5"):parseInt() ?? Int(1)) == 1);
+	checks!check((String("99999999999999999999"):parseInt() ?? Int(1)) == 1);
+	checks!check((String("2.5"):parseFloat() ?? Float(0.0)) == 2.5);
+	checks!check((String("-3"):parseFloat() ?? Float(0.0)) == ~Float(3.0));
+	checks!check((String(" 1"):parseFloat() ?? Float(1.5)) == 1.5);
 
 	// The program's arguments, as `String`s.
 	runtime Runtime(@program$runtime);
 	args List<String> = runtime:arguments();
 	raw @primitives$List<@primitives$String> = @program$runtime:arguments();
-	console!check(args:size() == Int(raw:size()));
+	checks!check(args:size() == Int(raw:size()));
 	same Bool = Bool(true);
 	k Int = Int(1);
 	k!to(args:size()) {
 		same = same and args[k] == String(raw[k]);
 	}
-	console!check(same);
+	checks!check(same);
 
 	// The thread pool, sized through the runtime.
 	refused Bool = Bool(false);
@@ -126,177 +168,177 @@ Unit main() {
 		refused = Bool(true);
 		resolve Unit();
 	}
-	console!check(refused);
+	checks!check(refused);
 	accepted Bool = Bool(true);
 	runtime!setThreads(Int(2)) ? e {
 		accepted = Bool(false);
 		resolve Unit();
 	}
-	console!check(accepted);
+	checks!check(accepted);
 	runtime!setThreadsAuto();
 
 	// Control flow.
 	chain Bool = if(Int(1) == 2) {
-		console!print("no");
+		checks!fail("no");
 	}
 	chain!elif(Int(1) == 1) {
-		console!print("yes");
+		checks!pass();
 	}
 	chain!elif(true) {
-		console!print("no");
+		checks!fail("no");
 	}
 	chain:else() {
-		console!print("no");
+		checks!fail("no");
 	}
 	reached Bool = Bool(false);
 	do() {
 		reached = Bool(true);
 	}
-	console!check(reached);
+	checks!check(reached);
 	count Int = Int(0);
 	i Int = Int(1);
 	i!to(Int(10)) {
 		count = count + i;
 	}
-	console!check(count == 55);
-	console!printUnlessStopped(Bool(false));
-	console!printUnlessStopped(Bool(true));
+	checks!check(count == 55);
+	checks!printUnlessStopped(Bool(false));
+	checks!printUnlessStopped(Bool(true));
 
 	// Array.
 	numbers Array<Int, 4> = Array([Int(1), Int(2), ~Int(5), Int(4)]);
-	console!check(numbers:size() == 4);
-	console!check(numbers[Int(2)] == 2);
+	checks!check(numbers:size() == 4);
+	checks!check(numbers[Int(2)] == 2);
 	numbers[Int(2)] = Int(20);
-	console!check(numbers[Int(2)] == 20);
+	checks!check(numbers[Int(2)] == 20);
 
 	// ArrayRef.
 	refs ArrayRef<Int, 3> = ArrayRef([Int(4), Int(5), Int(6)]);
-	console!check(refs:size() == 3);
+	checks!check(refs:size() == 3);
 	refs[Int(3)] = Int(60);
-	console!check(refs[Int(1)] + refs[Int(3)] == 64);
+	checks!check(refs[Int(1)] + refs[Int(3)] == 64);
 
 	// List.
 	list List<Int> = List(Int);
-	console!check(list:size() == 0);
+	checks!check(list:size() == 0);
 	j Int = Int(1);
 	j!to(Int(5)) {
 		list!push(j * j);
 	}
-	console!check(list:size() == 5);
-	console!check(list[Int(5)] == 25);
+	checks!check(list:size() == 5);
+	checks!check(list[Int(5)] == 25);
 	list[Int(5)] = Int(0);
-	console!check(firstAbove(list, Int(5)) == 3);
+	checks!check(firstAbove(list, Int(5)) == 3);
 	words List<String> = List(String);
 	words!push("a");
 	words!push("b");
-	console!check(words[Int(1)] + words[Int(2)] == "ab");
+	checks!check(words[Int(1)] + words[Int(2)] == "ab");
 
 	// A List of n copies of one value.
 	zeros List<I32> = List(Int(1000), I32(0));
-	console!check(zeros:size() == 1000);
-	console!check(zeros[Int(1)] == 0 and zeros[Int(1000)] == 0);
+	checks!check(zeros:size() == 1000);
+	checks!check(zeros[Int(1)] == 0 and zeros[Int(1000)] == 0);
 	zeros[Int(500)] = I32(5);
-	console!check(zeros[Int(499)] == 0 and zeros[Int(500)] == 5 and zeros[Int(501)] == 0);
+	checks!check(zeros[Int(499)] == 0 and zeros[Int(500)] == 5 and zeros[Int(501)] == 0);
 	none List<Int> = List(Int(0), Int(7));
-	console!check(none:size() == 0);
+	checks!check(none:size() == 0);
 	below List<Int> = List(~Int(3), Int(7));
-	console!check(below:size() == 0);
+	checks!check(below:size() == 0);
 	none!push(Int(8));
-	console!check(none:size() == 1 and none[Int(1)] == 8);
+	checks!check(none:size() == 1 and none[Int(1)] == 8);
 	flags List<Bool> = List(Int(3), Bool(false));
-	console!check(flags:size() == 3 and ~flags[Int(3)]);
+	checks!check(flags:size() == 3 and ~flags[Int(3)]);
 	// Each copy owns its own bytes: changing one leaves the others.
 	marks List<String> = List(Int(3), String("ab"));
 	marks[Int(2)] = marks[Int(2)] + "c";
-	console!check(marks[Int(1)] + marks[Int(2)] + marks[Int(3)] == "ababcab");
+	checks!check(marks[Int(1)] + marks[Int(2)] + marks[Int(3)] == "ababcab");
 	nested List<List<Int>> = List(Int(2), List(Int(2), Int(1)));
 	nested[Int(1)]!push(Int(9));
-	console!check(nested[Int(1)]:size() == 3 and nested[Int(2)]:size() == 2);
+	checks!check(nested[Int(1)]:size() == 3 and nested[Int(2)]:size() == 2);
 
 	// Removing from a List: in order, and by moving the last one in.
-	console!check(list!remove(Int(2)) == 4);
-	console!check(list:size() == 4);
-	console!check(list[Int(2)] == 9);
-	console!check(list!swapRemove(Int(1)) == 1);
-	console!check(list[Int(1)] == 0);
-	console!check(list:size() == 3);
+	checks!check(list!remove(Int(2)) == 4);
+	checks!check(list:size() == 4);
+	checks!check(list[Int(2)] == 9);
+	checks!check(list!swapRemove(Int(1)) == 1);
+	checks!check(list[Int(1)] == 0);
+	checks!check(list:size() == 3);
 	words!push("c");
 	removed String = words!remove(Int(1));
-	console!check(removed + words[Int(1)] + words[Int(2)] == "abc");
-	console!check(words!swapRemove(Int(1)) == "b");
-	console!check(words:size() == 1);
-	console!check(words[Int(1)] == "c");
+	checks!check(removed + words[Int(1)] + words[Int(2)] == "abc");
+	checks!check(words!swapRemove(Int(1)) == "b");
+	checks!check(words:size() == 1);
+	checks!check(words[Int(1)] == "c");
 
 	// A List is a value: a copy owns elements of its own.
 	copied List<String> = words;
 	copied!push("d");
 	copied[Int(1)] = String("e");
-	console!check(words:size() == 1);
-	console!check(words[Int(1)] == "c");
-	console!check(copied[Int(1)] + copied[Int(2)] == "ed");
+	checks!check(words:size() == 1);
+	checks!check(words[Int(1)] == "c");
+	checks!check(copied[Int(1)] + copied[Int(2)] == "ed");
 	shelf Shelf(copied);
 	shelf.labels!push("f");
-	console!check(copied:size() == 2);
-	console!check(shelf.labels:size() == 3);
+	checks!check(copied:size() == 2);
+	checks!check(shelf.labels:size() == 3);
 
 	// ListRef: a list of owners.
 	jars ListRef<Jar> = ListRef(Jar);
 	jars!push(Jar(Int(1)));
 	jars!push(Jar(Int(2)));
 	jars!push(Jar(Int(3)));
-	console!check(jars:size() == 3);
+	checks!check(jars:size() == 3);
 	jars[Int(2)].beans = Int(20);
-	console!check(jars[Int(2)].beans == 20);
+	checks!check(jars[Int(2)].beans == 20);
 	moved ^Jar = jars!remove(Int(1));
-	console!check(moved.beans == 1);
-	console!check(jars[Int(1)].beans == 20);
-	console!check(jars!swapRemove(Int(1)).beans == 20);
-	console!check(jars:size() == 1);
-	console!check(jars[Int(1)].beans == 3);
+	checks!check(moved.beans == 1);
+	checks!check(jars[Int(1)].beans == 20);
+	checks!check(jars!swapRemove(Int(1)).beans == 20);
+	checks!check(jars:size() == 1);
+	checks!check(jars[Int(1)].beans == 3);
 	// I32 and F32: narrow scalars for compact storage.
 	big I32 = I32(2147483647);
-	console!check(big + 1 < 0);
-	console!check(big + 1 == ~big - 1);
-	console!check(~(~big - 1) == ~big - 1);
-	console!check(big * 2 == ~2);
-	console!check(I32(7) + I32(5) == 12 and I32(7) * I32(5) == 35);
-	console!check(I32(7) / I32(2) == 3 and ~I32(7) / I32(2) == ~3);
-	console!check(I32(7) / I32(0) == 0);
-	console!check(~(~big - 1) / ~1 == ~big - 1);
-	console!check(I32(2) < I32(3) and ~(I32(3) < I32(3)) and I32(3) >= 3);
-	console!check(1 + I32(2) == 3 and 3 * I32(2) == 6 and 7 / I32(2) == 3);
-	console!check(I32(2) + 1 == 3 and I32(2) * 3 == 6 and I32(7) / 2 == 3);
-	console!check(1 < I32(2) and I32(2) < 3 and 2 == I32(2) and I32(2) == 2);
-	console!check(Int(I32(7)) == 7 and Int(~I32(7)) == ~Int(7));
-	console!check(Int(big) + 1 == 2147483648);
-	console!check(I32.wrap(Int(5)) == 5 and I32.wrap(~Int(5)) == ~5);
-	console!check(I32.wrap(Int(2147483648)) == ~big - 1);
-	console!check(I32.wrap(Int(4294967296) + 3) == 3);
-	console!check(I32.wrap(Int(4294967295)) == ~1);
-	console!check(I32.truncate(Float(2.75)) == 2 and I32.truncate(~Float(2.75)) == ~2);
-	console!check(I32.truncate(Float(1000000000000.0)) == big);
-	console!check(I32.truncate(F32.round(Float(3.9))) == 3);
-	console!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
-	console!check(String(big) == "2147483647");
+	checks!check(big + 1 < 0);
+	checks!check(big + 1 == ~big - 1);
+	checks!check(~(~big - 1) == ~big - 1);
+	checks!check(big * 2 == ~2);
+	checks!check(I32(7) + I32(5) == 12 and I32(7) * I32(5) == 35);
+	checks!check(I32(7) / I32(2) == 3 and ~I32(7) / I32(2) == ~3);
+	checks!check(I32(7) / I32(0) == 0);
+	checks!check(~(~big - 1) / ~1 == ~big - 1);
+	checks!check(I32(2) < I32(3) and ~(I32(3) < I32(3)) and I32(3) >= 3);
+	checks!check(1 + I32(2) == 3 and 3 * I32(2) == 6 and 7 / I32(2) == 3);
+	checks!check(I32(2) + 1 == 3 and I32(2) * 3 == 6 and I32(7) / 2 == 3);
+	checks!check(1 < I32(2) and I32(2) < 3 and 2 == I32(2) and I32(2) == 2);
+	checks!check(Int(I32(7)) == 7 and Int(~I32(7)) == ~Int(7));
+	checks!check(Int(big) + 1 == 2147483648);
+	checks!check(I32.wrap(Int(5)) == 5 and I32.wrap(~Int(5)) == ~5);
+	checks!check(I32.wrap(Int(2147483648)) == ~big - 1);
+	checks!check(I32.wrap(Int(4294967296) + 3) == 3);
+	checks!check(I32.wrap(Int(4294967295)) == ~1);
+	checks!check(I32.truncate(Float(2.75)) == 2 and I32.truncate(~Float(2.75)) == ~2);
+	checks!check(I32.truncate(Float(1000000000000.0)) == big);
+	checks!check(I32.truncate(F32.round(Float(3.9))) == 3);
+	checks!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
+	checks!check(String(big) == "2147483647");
 
 	// U8: a byte that widens without its sign.
 	byte U8 = U8(200);
-	console!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
-	console!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
-	console!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
+	checks!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
+	checks!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
+	checks!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
 	bytes List<U8> = List(U8);
 	b Int = Int(0);
 	b!to(Int(299)) {
 		bytes!push(U8.wrap(b));
 	}
-	console!check(bytes:size() == 300 and Int(bytes[Int(256)]) == 255 and Int(bytes[Int(258)]) == 1);
+	checks!check(bytes:size() == 300 and Int(bytes[Int(256)]) == 255 and Int(bytes[Int(258)]) == 1);
 	word String = String("héllo");
-	console!check(word:byteCount() == 6 and Int(word:byteAt(Int(1))) == 104 and Int(word:byteAt(Int(2))) == 195);
+	checks!check(word:byteCount() == 6 and Int(word:byteAt(Int(1))) == 104 and Int(word:byteAt(Int(2))) == 195);
 	abc List<U8> = List(U8);
 	abc!push(U8(97));
 	abc!push(U8(98));
 	abc!push(U8(99));
-	console!check(String(abc) == "abc" and String(List(U8)) == "");
+	checks!check(String(abc) == "abc" and String(List(U8)) == "");
 
 	// Ranges of a List: appended in one copy, compared and hashed; sorted
 	// (experiment); and a float read from a range of a string's bytes
@@ -306,14 +348,14 @@ Unit main() {
 	nums!push(Int(2));
 	nums!push(Int(3));
 	nums!appendOwn(Int(2), Int(2));
-	console!check(nums:size() == 5 and nums[Int(4)] == 2 and nums[Int(5)] == 3);
+	checks!check(nums:size() == 5 and nums[Int(4)] == 2 and nums[Int(5)] == 3);
 	tail List<Int> = List(Int);
 	tail!appendRange(nums, Int(3), Int(3));
-	console!check(tail:size() == 3 and tail[Int(1)] == 3 and tail[Int(2)] == 2 and tail[Int(3)] == 3);
+	checks!check(tail:size() == 3 and tail[Int(1)] == 3 and tail[Int(2)] == 2 and tail[Int(3)] == 3);
 	nums!sort();
-	console!check(nums[Int(1)] == 1 and nums[Int(2)] == 2 and nums[Int(3)] == 2 and nums[Int(5)] == 3);
+	checks!check(nums[Int(1)] == 1 and nums[Int(2)] == 2 and nums[Int(3)] == 2 and nums[Int(5)] == 3);
 	abc!sort();
-	console!check(String(abc) == "abc");
+	checks!check(String(abc) == "abc");
 	// Bytes sort unsigned: 128 and 255 come after 127.
 	mixed List<U8> = List(U8);
 	mixed!push(U8(255));
@@ -322,23 +364,23 @@ Unit main() {
 	mixed!push(U8(0));
 	mixed!push(U8(127));
 	mixed!sort();
-	console!check(mixed[Int(1)] == 0 and mixed[Int(2)] == 1 and mixed[Int(3)] == 127);
-	console!check(mixed[Int(4)] == 128 and mixed[Int(5)] == 255);
-	console!check(mixed[Int(1)] < 1 and 127 < mixed[Int(4)] and ~(mixed[Int(5)] < 255));
-	console!check(nums:sameRange(Int(4), tail, Int(3), Int(1)) and ~nums:sameRange(Int(4), tail, Int(1), Int(2)));
-	console!check(nums:hashRange(Int(2), Int(2)) == nums:hashRange(Int(2), Int(2)));
-	console!check(nums:hashRange(Int(4), Int(1)) == tail:hashRange(Int(1), Int(1)));
+	checks!check(mixed[Int(1)] == 0 and mixed[Int(2)] == 1 and mixed[Int(3)] == 127);
+	checks!check(mixed[Int(4)] == 128 and mixed[Int(5)] == 255);
+	checks!check(mixed[Int(1)] < 1 and 127 < mixed[Int(4)] and ~(mixed[Int(5)] < 255));
+	checks!check(nums:sameRange(Int(4), tail, Int(3), Int(1)) and ~nums:sameRange(Int(4), tail, Int(1), Int(2)));
+	checks!check(nums:hashRange(Int(2), Int(2)) == nums:hashRange(Int(2), Int(2)));
+	checks!check(nums:hashRange(Int(4), Int(1)) == tail:hashRange(Int(1), Int(1)));
 	// copyRange: a range of another list copied over this one's, at either
 	// end, and a copy of nothing.
 	over List<Int> = List(Int);
 	o Int = Int(1);
 	o!to(6) { over!push(o * 10); }
 	over!copyRange(2, tail, 1, 3);
-	console!check(over[Int(1)] == 10 and over[Int(2)] == 3 and over[Int(3)] == 2 and over[Int(4)] == 3 and over[Int(5)] == 50);
+	checks!check(over[Int(1)] == 10 and over[Int(2)] == 3 and over[Int(3)] == 2 and over[Int(4)] == 3 and over[Int(5)] == 50);
 	over!copyRange(6, tail, 3, 1);
-	console!check(over[Int(6)] == 3 and over[Int(5)] == 50);
+	checks!check(over[Int(6)] == 3 and over[Int(5)] == 50);
 	over!copyRange(1, tail, 1, 0);
-	console!check(over[Int(1)] == 10 and over:size() == 6);
+	checks!check(over[Int(1)] == 10 and over:size() == 6);
 	// sortBy: indices from 1 into the keys, sorted stably by the key each
 	// names: the two indices of key 5 keep their order.
 	keys List<Int> = List(Int);
@@ -351,12 +393,12 @@ Unit main() {
 	at Int = Int(1);
 	at!to(5) { order!push(I32.wrap(at)); }
 	order!sortBy(keys);
-	console!check(Int(order[Int(1)]) == 5 and Int(order[Int(2)]) == 2 and Int(order[Int(3)]) == 1);
-	console!check(Int(order[Int(4)]) == 4 and Int(order[Int(5)]) == 3);
+	checks!check(Int(order[Int(1)]) == 5 and Int(order[Int(2)]) == 2 and Int(order[Int(3)]) == 1);
+	checks!check(Int(order[Int(4)]) == 4 and Int(order[Int(5)]) == 3);
 	line String = String("x,4.35,-0.125,");
-	console!check((line:parseFloat(Int(3), Int(4)) ?? Float(0.0)) == 4.35);
-	console!check((line:parseFloat(Int(8), Int(6)) ?? Float(0.0)) == ~Float(0.125));
-	console!check((line:parseFloat(Int(1), Int(2)) ?? Float(1.5)) == 1.5);
+	checks!check((line:parseFloat(Int(3), Int(4)) ?? Float(0.0)) == 4.35);
+	checks!check((line:parseFloat(Int(8), Int(6)) ?? Float(0.0)) == ~Float(0.125));
+	checks!check((line:parseFloat(Int(1), Int(2)) ?? Float(1.5)) == 1.5);
 	commaFlags List<Bool> = List(Bool);
 	dashFlags List<Bool> = List(Bool);
 	flagByte Int = Int(0);
@@ -366,37 +408,37 @@ Unit main() {
 	}
 	commas ByteSet = commaFlags:byteSet();
 	dashes ByteSet = dashFlags:byteSet();
-	console!check(line:findAny(1, line:byteCount(), commas) == 2 and line:findAny(3, 4, commas) == 0);
-	console!check(line:findAny(8, 7, commas) == 14);
-	console!check(line:findPair(1, 13, commas, 1, dashes) == 7 and line:findPair(1, 6, commas, 1, dashes) == 0);
-	console!check(line:hashBytes() == (String("x,4.35,") + String("-0.125,")):hashBytes());
+	checks!check(line:findAny(1, line:byteCount(), commas) == 2 and line:findAny(3, 4, commas) == 0);
+	checks!check(line:findAny(8, 7, commas) == 14);
+	checks!check(line:findPair(1, 13, commas, 1, dashes) == 7 and line:findPair(1, 6, commas, 1, dashes) == 0);
+	checks!check(line:hashBytes() == (String("x,4.35,") + String("-0.125,")):hashBytes());
 
 	fl F32 = F32(1.5);
-	console!check(fl + 2.0 == 3.5 and 2.0 + fl == 3.5);
-	console!check(fl * F32(2.0) == 3.0 and fl * 2.0 == 3.0 and 2.0 * fl == 3.0);
-	console!check(fl / F32(2.0) == 0.75 and fl / 2.0 == 0.75 and 3.0 / fl == 2.0);
-	console!check(~fl < 0.0 and fl < 2.0 and 1.0 < fl and ~(fl < fl));
-	console!check(fl == 1.5 and 1.5 == fl and fl ~= 2.0);
-	console!check(~fl == ~F32(1.5));
-	console!check(Float(fl) == 1.5 and Float(~fl) == ~Float(1.5));
-	console!check(Float(I32(7)) == 7.0 and Float(~big) == ~Float(2147483647.0));
-	console!check(F32.round(Float(2.5)) == 2.5);
-	console!check(Float(F32.round(Float(0.1))) ~= 0.1);
-	console!check(Float(F32.round(Float(0.1))) == 0.10000000149011612);
-	console!check(F32.round(Float(16777217.0)) == 16777216.0);
-	console!check(F32.round(I32(16777217)) == 16777216.0);
-	console!check(F32.round(Int(3)) == 3.0);
-	console!check(String(F32(2.5)) == "2.5");
-	console!check(String(~F32(0.5)) == "-0.5");
+	checks!check(fl + 2.0 == 3.5 and 2.0 + fl == 3.5);
+	checks!check(fl * F32(2.0) == 3.0 and fl * 2.0 == 3.0 and 2.0 * fl == 3.0);
+	checks!check(fl / F32(2.0) == 0.75 and fl / 2.0 == 0.75 and 3.0 / fl == 2.0);
+	checks!check(~fl < 0.0 and fl < 2.0 and 1.0 < fl and ~(fl < fl));
+	checks!check(fl == 1.5 and 1.5 == fl and fl ~= 2.0);
+	checks!check(~fl == ~F32(1.5));
+	checks!check(Float(fl) == 1.5 and Float(~fl) == ~Float(1.5));
+	checks!check(Float(I32(7)) == 7.0 and Float(~big) == ~Float(2147483647.0));
+	checks!check(F32.round(Float(2.5)) == 2.5);
+	checks!check(Float(F32.round(Float(0.1))) ~= 0.1);
+	checks!check(Float(F32.round(Float(0.1))) == 0.10000000149011612);
+	checks!check(F32.round(Float(16777217.0)) == 16777216.0);
+	checks!check(F32.round(I32(16777217)) == 16777216.0);
+	checks!check(F32.round(Int(3)) == 3.0);
+	checks!check(String(F32(2.5)) == "2.5");
+	checks!check(String(~F32(0.5)) == "-0.5");
 	counts List<I32> = List(I32);
 	counts!push(I32(7));
 	counts!push(big);
-	console!check(counts[Int(1)] == 7 and counts[Int(2)] == big);
+	checks!check(counts[Int(1)] == 7 and counts[Int(2)] == big);
 
 	// A call whose arguments are all literals takes Int or Float.
-	console!check(Float(139968) == 139968.0 and Float(2.5) == 2.5);
-	console!check(String(5) == "5" and String(2.5) == "2.5");
-	console!check(Int(3) == 3 and I32(3) == 3);
+	checks!check(Float(139968) == 139968.0 and Float(2.5) == 2.5);
+	checks!check(String(5) == "5" and String(2.5) == "2.5");
+	checks!check(Int(3) == 3 and I32(3) == 3);
 
 	// Workers: a step run until it returns false, with and without a wait,
 	// and spawned.
@@ -405,22 +447,22 @@ Unit main() {
 		this.taken = this.taken + 1;
 		return this.taken < this.limit;
 	});
-	console!check(steps.taken == 5);
+	checks!check(steps.taken == 5);
 	once Steps(0);
 	once!work(Bool(this Steps) mut {
 		this.taken = this.taken + 1;
 		return Bool(false);
 	});
-	console!check(once.taken == 1);
+	checks!check(once.taken == 1);
 	ticks Steps(3);
 	ticks!setInterval(Duration.milliseconds(1), Bool(this Steps) mut {
 		this.taken = this.taken + 1;
 		return this.taken < this.limit;
 	});
-	console!check(ticks.taken == 3);
-	console!check(Duration.seconds(2):nanoseconds() == 2000000000);
-	console!check(Duration.milliseconds(16):nanoseconds() == 16000000);
-	console!check(Duration.nanoseconds(7):nanoseconds() == 7);
+	checks!check(ticks.taken == 3);
+	checks!check(Duration.seconds(2):nanoseconds() == 2000000000);
+	checks!check(Duration.milliseconds(16):nanoseconds() == 16000000);
+	checks!check(Duration.nanoseconds(7):nanoseconds() == 7);
 	spawnedTaken Int = Int(0);
 	do() {
 		spawned Steps(4);
@@ -432,7 +474,10 @@ Unit main() {
 		}
 		spawnedTaken = spawned.taken;
 	}
-	console!check(spawnedTaken == 4);
+	checks!check(spawnedTaken == 4);
 
+	checks:finish() ? report {
+		abort report;
+	}
 	return Unit();
 }
