@@ -147,6 +147,43 @@ Tally applied(pool WorkerPool<Sender, Tally, Sent>, events Int) {
 	return pool:state();
 }
 
+/// A package constant, which the elements of a pool read through an `&`.
+type Threes = #struct {
+	values List<Int>;
+}
+Threes() => init{ values = List(Int(10), Int(3)); }
+
+threes Threes = Threes();
+
+/// A worker that publishes each of its table's values in turn.
+type Summer = #struct {
+	table &Threes;
+	at Int;
+}
+Summer(table &Threes) => init{ table; at = Int(0); }
+
+/// Starts a summer on `table`: its callers pass a package constant.
+Unit summing(this WorkerPool<Summer, Int, Int>, table &Threes) mut {
+	this!start(Summer(table), Bool(this Summer, total Int, publish Unit[Int]) mut {
+		this.at = this.at + 1;
+		publish(this.table.values[this.at]);
+		return this.at < this.table.values:size();
+	});
+	return Unit();
+}
+
+/// The pool's state once it reaches `total`, read while the workers run.
+Int summed(pool WorkerPool<Summer, Int, Int>, total Int) {
+	i Int = Int(1);
+	i!to(Int(1000000000)) {
+		now Int = pool:state();
+		if(now == total) {
+			return now;
+		}
+	}
+	return pool:state();
+}
+
 Unit printUnlessStopped(this Checks, stop Bool) mut {
 	do() {
 		guard(stop);
@@ -585,7 +622,8 @@ Unit?@primitives$String main() {
 
 	// Worker pools: ten senders publish 55 events to a funnel, which sums
 	// them into the state in order; a pool without state whose elements
-	// are read while they run; and workers on timers.
+	// are read while they run; elements that read a package constant; and
+	// workers on timers.
 	do() {
 		pool WorkerPool<Sender, Tally, Sent> = WorkerPool(Sender, Tally(Int(10)), Unit(this Tally, event Sent) mut {
 			this!add(event);
@@ -618,6 +656,15 @@ Unit?@primitives$String main() {
 			whole = whole and seen[read].taken <= seen[read].limit;
 		}
 		checks!check(whole);
+	}
+	do() {
+		sums WorkerPool<Summer, Int, Int> = WorkerPool(Summer, Int(0), Unit(this Int, n Int) mut {
+			this = this + n;
+			return Unit();
+		});
+		sums!summing(threes);
+		sums!summing(threes);
+		checks!check(summed(sums, Int(60)) == 60);
 	}
 	do() {
 		timed WorkerPool<Steps, Unit, Unit> = WorkerPool(Steps);

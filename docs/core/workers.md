@@ -90,9 +90,13 @@ keeps its thread while it waits.
 ## Elements and the state
 
 The state and the events are values. An element is a value, or an owner whose
-every `&` names a capability, such as a `Console`'s, so a step can print or
-reach the outside world through its element. When a step returns `false`, its
-element is destroyed. `elements` copies each element, so it reads only a pool
+every `&` names a package constant or a capability. Through an `&` to a
+capability, such as a `Console`'s, a step can print or reach the outside world.
+Through an `&` to a package constant, the steps of many elements read one
+table. The compiler follows each `&` to the place it was taken from, so an
+element built in a verb from an `&` parameter is accepted where each call of
+that verb passes a package constant. When a step returns `false`, its element
+is destroyed. `elements` copies each element, so it reads only a pool
 whose elements are values.
 
 ## Where a pool ends
