@@ -53,8 +53,9 @@ Unit register(this S Type, source EventSource, step Bool[this S] mut) mut {
 	return Unit();
 }
 
-/// Runs a worker as `register` does on a timer, waiting `every` between one
-/// step and the next.
+/// Runs a worker as `register` does on a timer that is ready each time
+/// `every` has passed since it was last ready, counted from the timer rather
+/// than from the end of a step.
 Unit setInterval(this S Type, every Duration, step Bool[this S] mut) mut {
 	this!register(EventSource.every(every), step);
 	return Unit();

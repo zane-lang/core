@@ -12,7 +12,7 @@ This page covers `core`'s branching, loops and workers, which are ordinary funct
 | `i!to(end) { … }` | runs the block for each value of `i` up to `end`, advancing `i` |
 | `s!work(step)` | calls `step` on `s` until `step` returns `false` |
 | `s!register(source, step)` | works like `work`, and calls `step` again only once the `EventSource` `source` is ready |
-| `s!setInterval(every, step)` | `register` on a timer: works like `work`, and waits the `Duration` `every` between steps |
+| `s!setInterval(every, step)` | `register` on a timer: calls `step` each time the `Duration` `every` has passed since the timer was last ready |
 
 ```zane
 package hello;
