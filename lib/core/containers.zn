@@ -31,6 +31,12 @@ ArrayRef<T, n>.roaming(values @concepts$Array<^T Type, n @concepts$Int>) => init
 ArrayRef<&T, n>.refs(values @concepts$Array<&T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef.refs(values);
 }
+/// `n` elements, each made by calling `make` with its position, counted
+/// from 1, in order: `ArrayRef.fill(3, Int(i Int) => i * i)` holds 1, 4
+/// and 9.
+ArrayRef<T, n>.fill(n @concepts$Int, make ^T Type[Int]) => init{
+	_value = @primitives$ArrayRef.fill(n, make);
+}
 
 Int size(this ArrayRef<T Type, n @concepts$Int>) => Int(n);
 (this ArrayRef<T Type, n @concepts$Int>)[index Int] => this._value[index._value];

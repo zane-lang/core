@@ -219,6 +219,34 @@ Unit main() {
 3 44
 ```
 
+`ArrayRef.fill(n, make)` makes its `n` elements by calling the lambda `make`
+once per position, in order, with the position counted from 1 as an `Int`.
+The element type is the type the lambda returns, so `make` may return values
+or owners moved in:
+
+```zane
+package hello;
+
+import core$;
+
+type Jar = #struct {
+	beans Int;
+}
+Jar(beans Int) => init{ beans; }
+
+Unit main() {
+	console Console(@program$console);
+	squares ArrayRef<Int, 4> = ArrayRef.fill(4, Int(i Int) => i * i);
+	jars ArrayRef<Jar, 3> = ArrayRef.fill(3, ^Jar(i Int) => Jar(i * 10));
+	console!print(String(squares[Int(4)]) + " " + String(jars[Int(3)].beans));
+	return Unit();
+}
+```
+
+```output
+16 30
+```
+
 ## Source
 
 [`lib/core/containers.zn`](https://github.com/zane-lang/std/blob/main/lib/core/containers.zn)
