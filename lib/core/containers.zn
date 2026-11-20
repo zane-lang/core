@@ -16,8 +16,26 @@ Int size(this Array<T Type, n @concepts$Int>) => Int(n);
 type ArrayRef<T Type, n @concepts$Int> = #struct {
 	_value @primitives$ArrayRef<T, n>;
 }
+/// From an array literal, each element borrowed and copied in: values, or
+/// `&` values for an `ArrayRef<&T, n>` (generics.md §8.4).
 ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef(values);
+}
+/// From an array literal, each element taken: an owner of a reference type
+/// moves in, and a value is copied.
+ArrayRef<T, n>.roaming(values @concepts$Array<^T Type, n @concepts$Int>) => init{
+	_value = @primitives$ArrayRef.roaming(values);
+}
+/// From an array literal, a reference to each element: a settled owner
+/// mints one, and an `&` value is copied.
+ArrayRef<&T, n>.refs(values @concepts$Array<&T Type, n @concepts$Int>) => init{
+	_value = @primitives$ArrayRef.refs(values);
+}
+/// `n` elements, each made by calling `make` with its position, counted
+/// from 1, in order: `ArrayRef.fill(3, Int(i Int) => i * i)` holds 1, 4
+/// and 9.
+ArrayRef<T, n>.fill(n @concepts$Int, make ^T Type[Int]) => init{
+	_value = @primitives$ArrayRef.fill(n, make);
 }
 
 Int size(this ArrayRef<T Type, n @concepts$Int>) => Int(n);
@@ -61,22 +79,23 @@ Unit appendRange(this List<T Type>, from List<T>, start Int, count Int) mut {
 	this._value!appendRange(from._value, start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): copies `count` elements of `from`,
-/// starting at element `start`, over this list's elements starting at element
-/// `at`, in a single copy. Both ranges lie within their lists. For elements that own
-/// no blocks.
+/// Copies `count` elements of `from`, starting at element `start`, over this
+/// list's elements starting at element `at`, in a single copy. Both ranges lie
+/// within their lists. For elements that own no blocks.
 Unit copyRange(this List<T Type>, at Int, from List<T>, start Int, count Int) mut {
 	this._value!copyRange(at._value, from._value, start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): sorts this list of `I32` indices
-/// into `keys` stably, in ascending order of the key at each index.
+/// Sorts this list of `I32` positions into the `Int` list `keys`, counted
+/// from 1, in place, in ascending order of the key at each position.
+/// Positions with equal keys keep their order. A position outside `keys`
+/// stops the program.
 Unit sortBy(this List<T Type>, keys List<K Type>) mut {
 	this._value!sortBy(keys._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): sorts the elements in place, in
-/// ascending order. For lists of integers: `I32`, `Int` and `U8`.
+/// Sorts the elements in place, in ascending order. For lists of integers:
+/// `I32`, `Int` and `U8`.
 Unit sort(this List<T Type>) mut {
 	this._value!sort();
 	return Unit();

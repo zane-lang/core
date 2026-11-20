@@ -645,7 +645,7 @@ ByteSet _prefixSet(prefix List<Bool>, at Int) {
 }
 
 /// The pattern compiled, or why it does not compile. The syntax is in
-/// the package's README.
+/// docs/regex.md (https://zane-lang.org/std/regex).
 Regex?RegexError compile(pattern String) {
 	r _Builder = _Builder(pattern);
 	root Int = r!parseAlt();

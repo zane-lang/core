@@ -3,12 +3,54 @@ package test;
 import core$;
 import math$;
 
-Unit check(this Console, ok Bool) mut {
+/// The checks a test program has run. Each prints `yes` or `no` as it runs,
+/// and `finish` aborts when any failed, naming them, so the program ends
+/// with a failing status and `zane test` fails.
+type Checks = #struct {
+	_console Console;
+	_count Int;
+	_failures Int;
+	_failed String;
+}
+
+Checks() => init{
+	_console = Console(@program$console);
+	_count = Int(0);
+	_failures = Int(0);
+	_failed = String("");
+}
+
+/// A check that passed.
+Unit pass(this Checks) mut {
+	this._count = this._count + 1;
+	this._console!print("yes");
+	return Unit();
+}
+
+/// A check that failed, reported as `report`.
+Unit fail(this Checks, report String) mut {
+	this._count = this._count + 1;
+	this._failures = this._failures + 1;
+	this._failed = this._failed + " " + String(this._count);
+	this._console!print(report);
+	return Unit();
+}
+
+/// Passes when `ok` holds, and fails as `no` otherwise.
+Unit check(this Checks, ok Bool) mut {
 	ran Bool = if(ok) {
-		this!print("yes");
+		this!pass();
 	}
 	ran:else() {
-		this!print("no");
+		this!fail("no");
+	}
+	return Unit();
+}
+
+/// Aborts, naming the checks that failed, when any did.
+Unit?@primitives$String finish(this Checks) {
+	if(this._failures > 0) {
+		abort @primitives$String(String(this._failures) + " of " + String(this._count) + " checks failed:" + this._failed);
 	}
 	return Unit();
 }
@@ -17,96 +59,99 @@ Unit check(this Console, ok Bool) mut {
 /// approximate function's result depends on the platform (math.md §2.6).
 Bool near(value Float, expected Float) => abs(value - expected) < 0.000000000001;
 
-Unit main() {
-	console Console(@program$console);
+Unit?@primitives$String main() {
+	checks Checks();
 
-	console!check(bitAnd(Int(12), Int(10)) == 8);
-	console!check(bitOr(Int(12), Int(10)) == 14);
-	console!check(bitXor(Int(12), Int(10)) == 6);
-	console!check(bitNot(Int(0)) == ~Int(1));
-	console!check(shiftLeft(Int(1), Int(65)) == 2);
-	console!check(shiftRight(~Int(16), Int(2)) == ~Int(4));
-	console!check(shiftRightLogical(~Int(1), Int(60)) == 15);
-	console!check(rotateRight(rotateLeft(Int(6), Int(3)), Int(3)) == 6);
-	console!check(popCount(Int(255)) == 8);
-	console!check(leadingZeros(Int(0)) == 64);
-	console!check(trailingZeros(Int(8)) == 3);
-	console!check(abs(~Int(5)) == 5);
-	console!check(min(Int(3), ~Int(2)) == ~Int(2));
-	console!check(max(Int(3), ~Int(2)) == 3);
-	console!check(sqrt(Float(16.0)) == 4.0);
-	console!check(abs(~Float(2.5)) == 2.5);
-	console!check(floor(~Float(1.5)) == ~Float(2.0));
-	console!check(ceil(Float(1.25)) == 2.0);
-	console!check(trunc(~Float(1.75)) == ~Float(1.0));
-	console!check(roundEven(Float(2.5)) == 2.0);
-	console!check(fma(Float(2.0), Float(3.0), Float(1.0)) == 7.0);
-	console!check(copySign(Float(2.0), ~Float(1.0)) == ~Float(2.0));
-	console!check(min(Float(1.0), Float(2.0)) == 1.0);
-	console!check(max(Float(1.0), Float(2.0)) == 2.0);
-	console!check(near(sin(Float(0.5)), 0.479425538604203));
-	console!check(near(cos(Float(0.5)), 0.8775825618903728));
-	console!check(near(tan(Float(0.5)), 0.5463024898437905));
-	console!check(near(asin(Float(0.5)), 0.5235987755982989));
-	console!check(near(acos(Float(0.5)), 1.0471975511965979));
-	console!check(near(atan(Float(1.0)), 0.7853981633974483));
-	console!check(near(atan2(Float(1.0), ~Float(1.0)), 2.356194490192345));
-	console!check(near(exp(Float(1.0)), 2.718281828459045));
-	console!check(near(log(Float(10.0)), 2.302585092994046));
-	console!check(near(pow(Float(2.0), Float(10.0)), 1024.0));
-	console!check(near(cbrt(~Float(27.0)), ~Float(3.0)));
-	console!check(near(hypot(Float(3.0), Float(4.0)), 5.0));
+	checks!check(bitAnd(Int(12), Int(10)) == 8);
+	checks!check(bitOr(Int(12), Int(10)) == 14);
+	checks!check(bitXor(Int(12), Int(10)) == 6);
+	checks!check(bitNot(Int(0)) == ~Int(1));
+	checks!check(shiftLeft(Int(1), Int(65)) == 2);
+	checks!check(shiftRight(~Int(16), Int(2)) == ~Int(4));
+	checks!check(shiftRightLogical(~Int(1), Int(60)) == 15);
+	checks!check(rotateRight(rotateLeft(Int(6), Int(3)), Int(3)) == 6);
+	checks!check(popCount(Int(255)) == 8);
+	checks!check(leadingZeros(Int(0)) == 64);
+	checks!check(trailingZeros(Int(8)) == 3);
+	checks!check(abs(~Int(5)) == 5);
+	checks!check(min(Int(3), ~Int(2)) == ~Int(2));
+	checks!check(max(Int(3), ~Int(2)) == 3);
+	checks!check(sqrt(Float(16.0)) == 4.0);
+	checks!check(abs(~Float(2.5)) == 2.5);
+	checks!check(floor(~Float(1.5)) == ~Float(2.0));
+	checks!check(ceil(Float(1.25)) == 2.0);
+	checks!check(trunc(~Float(1.75)) == ~Float(1.0));
+	checks!check(roundEven(Float(2.5)) == 2.0);
+	checks!check(fma(Float(2.0), Float(3.0), Float(1.0)) == 7.0);
+	checks!check(copySign(Float(2.0), ~Float(1.0)) == ~Float(2.0));
+	checks!check(min(Float(1.0), Float(2.0)) == 1.0);
+	checks!check(max(Float(1.0), Float(2.0)) == 2.0);
+	checks!check(near(sin(Float(0.5)), 0.479425538604203));
+	checks!check(near(cos(Float(0.5)), 0.8775825618903728));
+	checks!check(near(tan(Float(0.5)), 0.5463024898437905));
+	checks!check(near(asin(Float(0.5)), 0.5235987755982989));
+	checks!check(near(acos(Float(0.5)), 1.0471975511965979));
+	checks!check(near(atan(Float(1.0)), 0.7853981633974483));
+	checks!check(near(atan2(Float(1.0), ~Float(1.0)), 2.356194490192345));
+	checks!check(near(exp(Float(1.0)), 2.718281828459045));
+	checks!check(near(log(Float(10.0)), 2.302585092994046));
+	checks!check(near(pow(Float(2.0), Float(10.0)), 1024.0));
+	checks!check(near(cbrt(~Float(27.0)), ~Float(3.0)));
+	checks!check(near(hypot(Float(3.0), Float(4.0)), 5.0));
 
 	// I32 and F32.
-	console!check(bitAnd(I32(12), I32(10)) == 8 and bitOr(I32(12), I32(10)) == 14);
-	console!check(bitXor(I32(12), I32(10)) == 6 and bitNot(I32(0)) == ~1);
-	console!check(shiftLeft(I32(1), I32(33)) == 2);
-	console!check(shiftLeft(I32(1), I32(31)) == ~I32(2147483647) - 1);
-	console!check(shiftRight(~I32(16), I32(2)) == ~4);
-	console!check(shiftRightLogical(~I32(1), I32(28)) == 15);
-	console!check(rotateRight(rotateLeft(I32(6), I32(3)), I32(3)) == 6);
-	console!check(popCount(I32(255)) == 8 and popCount(bitNot(I32(1))) == 31);
-	console!check(leadingZeros(I32(0)) == 32 and trailingZeros(I32(0)) == 32);
-	console!check(trailingZeros(I32(8)) == 3);
-	console!check(abs(~I32(5)) == 5 and min(I32(3), ~I32(2)) == ~2 and max(I32(3), ~I32(2)) == 3);
-	console!check(sqrt(F32(16.0)) == 4.0 and abs(~F32(2.5)) == 2.5);
-	console!check(floor(~F32(1.5)) == ~F32(2.0) and ceil(F32(1.25)) == 2.0);
-	console!check(trunc(~F32(1.75)) == ~F32(1.0) and roundEven(F32(2.5)) == 2.0);
-	console!check(fma(F32(2.0), F32(3.0), F32(1.0)) == 7.0);
-	console!check(copySign(F32(2.0), ~F32(1.0)) == ~F32(2.0));
-	console!check(min(F32(1.0), F32(2.0)) == 1.0 and max(F32(1.0), F32(2.0)) == 2.0);
-	console!check(abs(sin(F32(0.5)) - F32(0.4794255)) < 0.00001);
-	console!check(abs(pow(F32(2.0), F32(10.0)) - F32(1024.0)) < 0.001);
-	console!check(abs(hypot(F32(3.0), F32(4.0)) - F32(5.0)) < 0.00001);
+	checks!check(bitAnd(I32(12), I32(10)) == 8 and bitOr(I32(12), I32(10)) == 14);
+	checks!check(bitXor(I32(12), I32(10)) == 6 and bitNot(I32(0)) == ~1);
+	checks!check(shiftLeft(I32(1), I32(33)) == 2);
+	checks!check(shiftLeft(I32(1), I32(31)) == ~I32(2147483647) - 1);
+	checks!check(shiftRight(~I32(16), I32(2)) == ~4);
+	checks!check(shiftRightLogical(~I32(1), I32(28)) == 15);
+	checks!check(rotateRight(rotateLeft(I32(6), I32(3)), I32(3)) == 6);
+	checks!check(popCount(I32(255)) == 8 and popCount(bitNot(I32(1))) == 31);
+	checks!check(leadingZeros(I32(0)) == 32 and trailingZeros(I32(0)) == 32);
+	checks!check(trailingZeros(I32(8)) == 3);
+	checks!check(abs(~I32(5)) == 5 and min(I32(3), ~I32(2)) == ~2 and max(I32(3), ~I32(2)) == 3);
+	checks!check(sqrt(F32(16.0)) == 4.0 and abs(~F32(2.5)) == 2.5);
+	checks!check(floor(~F32(1.5)) == ~F32(2.0) and ceil(F32(1.25)) == 2.0);
+	checks!check(trunc(~F32(1.75)) == ~F32(1.0) and roundEven(F32(2.5)) == 2.0);
+	checks!check(fma(F32(2.0), F32(3.0), F32(1.0)) == 7.0);
+	checks!check(copySign(F32(2.0), ~F32(1.0)) == ~F32(2.0));
+	checks!check(min(F32(1.0), F32(2.0)) == 1.0 and max(F32(1.0), F32(2.0)) == 2.0);
+	checks!check(abs(sin(F32(0.5)) - F32(0.4794255)) < 0.00001);
+	checks!check(abs(pow(F32(2.0), F32(10.0)) - F32(1024.0)) < 0.001);
+	checks!check(abs(hypot(F32(3.0), F32(4.0)) - F32(5.0)) < 0.00001);
 
 	// A call whose arguments are all literals uses Int or Float.
-	console!check(bitAnd(12, 10) == 8 and bitOr(12, 10) == 14 and bitXor(12, 10) == 6);
-	console!check(bitNot(0) == ~Int(1));
-	console!check(shiftLeft(1, 65) == 2 and shiftRight(~Int(16), 2) == ~Int(4));
-	console!check(shiftRightLogical(~Int(1), 60) == 15);
-	console!check(rotateRight(rotateLeft(6, 3), 3) == 6);
-	console!check(popCount(255) == 8 and leadingZeros(0) == 64 and trailingZeros(8) == 3);
-	console!check(abs(3) == 3 and min(3, 2) == 2 and max(3, 2) == 3);
-	console!check(sqrt(16.0) == 4.0 and abs(2.5) == 2.5);
-	console!check(floor(1.5) == 1.0 and ceil(1.25) == 2.0 and trunc(2.75) == 2.0);
-	console!check(roundEven(2.5) == 2.0 and roundEven(3.5) == 4.0);
-	console!check(fma(2.0, 3.0, 1.0) == 7.0 and copySign(2.0, 1.0) == 2.0);
-	console!check(min(1.5, 2.5) == 1.5 and max(1.5, 2.5) == 2.5);
-	console!check(near(cbrt(27.0), 3.0) and near(sin(0.0), 0.0) and near(cos(0.0), 1.0));
-	console!check(near(tan(0.0), 0.0) and near(asin(0.0), 0.0) and near(acos(1.0), 0.0));
-	console!check(near(atan(0.0), 0.0) and near(atan2(0.0, 1.0), 0.0));
-	console!check(near(exp(0.0), 1.0) and near(log(1.0), 0.0) and near(pow(2.0, 3.0), 8.0));
-	console!check(near(hypot(3.0, 4.0), 5.0));
-	console!check(I32.truncate(2.75) == 2 and F32.round(3) == 3.0 and F32.round(2.5) == 2.5);
-	console!check(String(5) == "5" and String(2.5) == "2.5");
-	console!check(Float(139968) == 139968.0);
+	checks!check(bitAnd(12, 10) == 8 and bitOr(12, 10) == 14 and bitXor(12, 10) == 6);
+	checks!check(bitNot(0) == ~Int(1));
+	checks!check(shiftLeft(1, 65) == 2 and shiftRight(~Int(16), 2) == ~Int(4));
+	checks!check(shiftRightLogical(~Int(1), 60) == 15);
+	checks!check(rotateRight(rotateLeft(6, 3), 3) == 6);
+	checks!check(popCount(255) == 8 and leadingZeros(0) == 64 and trailingZeros(8) == 3);
+	checks!check(abs(3) == 3 and min(3, 2) == 2 and max(3, 2) == 3);
+	checks!check(sqrt(16.0) == 4.0 and abs(2.5) == 2.5);
+	checks!check(floor(1.5) == 1.0 and ceil(1.25) == 2.0 and trunc(2.75) == 2.0);
+	checks!check(roundEven(2.5) == 2.0 and roundEven(3.5) == 4.0);
+	checks!check(fma(2.0, 3.0, 1.0) == 7.0 and copySign(2.0, 1.0) == 2.0);
+	checks!check(min(1.5, 2.5) == 1.5 and max(1.5, 2.5) == 2.5);
+	checks!check(near(cbrt(27.0), 3.0) and near(sin(0.0), 0.0) and near(cos(0.0), 1.0));
+	checks!check(near(tan(0.0), 0.0) and near(asin(0.0), 0.0) and near(acos(1.0), 0.0));
+	checks!check(near(atan(0.0), 0.0) and near(atan2(0.0, 1.0), 0.0));
+	checks!check(near(exp(0.0), 1.0) and near(log(1.0), 0.0) and near(pow(2.0, 3.0), 8.0));
+	checks!check(near(hypot(3.0, 4.0), 5.0));
+	checks!check(I32.truncate(2.75) == 2 and F32.round(3) == 3.0 and F32.round(2.5) == 2.5);
+	checks!check(String(5) == "5" and String(2.5) == "2.5");
+	checks!check(Float(139968) == 139968.0);
 
 	// An operand of a declared type keeps the call at that type's width.
 	x Int = Int(12);
 	y Float = Float(16.0);
-	console!check(bitAnd(x, 10) == 8 and bitAnd(10, x) == 8 and max(x, 3) == 12);
-	console!check(sqrt(y) == 4.0 and min(y, 2.5) == 2.5 and max(2.5, y) == 16.0);
-	console!check(bitAnd(I32(12), 10) == 8 and min(F32(1.5), 2.5) == 1.5);
+	checks!check(bitAnd(x, 10) == 8 and bitAnd(10, x) == 8 and max(x, 3) == 12);
+	checks!check(sqrt(y) == 4.0 and min(y, 2.5) == 2.5 and max(2.5, y) == 16.0);
+	checks!check(bitAnd(I32(12), 10) == 8 and min(F32(1.5), 2.5) == 1.5);
 
+	checks:finish() ? report {
+		abort report;
+	}
 	return Unit();
 }
