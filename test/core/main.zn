@@ -70,7 +70,7 @@ type Shelf = struct {
 }
 Shelf(labels List<String>) => init{ labels; }
 
-/// An owner, which a `ListRef` holds and a `List` cannot.
+/// An owner, which a `ListRef` and an `ArrayRef` hold and a `List` cannot.
 type Jar = #struct {
 	beans Int;
 }
@@ -218,6 +218,15 @@ Unit?@primitives$String main() {
 	checks!check(refs:size() == 3);
 	refs[Int(3)] = Int(60);
 	checks!check(refs[Int(1)] + refs[Int(3)] == 64);
+	// ArrayRef.roaming: owners moved in, a temporary and a roaming owner,
+	// whose elements are then changed in place.
+	loose ^Jar = Jar(Int(2));
+	stood ArrayRef<Jar, 2> = ArrayRef.roaming([Jar(Int(1)), loose]);
+	stood[Int(2)].beans = stood[Int(2)].beans * 10;
+	checks!check(stood:size() == 2 and stood[Int(1)].beans == 1 and stood[Int(2)].beans == 20);
+	// Values are copied in, as by `ArrayRef`.
+	pair ArrayRef<Int, 2> = ArrayRef.roaming([Int(7), Int(8)]);
+	checks!check(pair[Int(1)] + pair[Int(2)] == 15);
 
 	// List.
 	list List<Int> = List(Int);

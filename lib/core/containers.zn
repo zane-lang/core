@@ -16,8 +16,15 @@ Int size(this Array<T Type, n @concepts$Int>) => Int(n);
 type ArrayRef<T Type, n @concepts$Int> = #struct {
 	_value @primitives$ArrayRef<T, n>;
 }
+/// From an array literal, each element borrowed and copied in, so the
+/// elements are values (generics.md §8.4).
 ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef(values);
+}
+/// From an array literal, each element taken: an owner of a reference type
+/// moves in, and a value is copied.
+ArrayRef<T, n>.roaming(values @concepts$Array<^T Type, n @concepts$Int>) => init{
+	_value = @primitives$ArrayRef.roaming(values);
 }
 
 Int size(this ArrayRef<T Type, n @concepts$Int>) => Int(n);
