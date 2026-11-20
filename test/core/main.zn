@@ -351,9 +351,8 @@ Unit?@primitives$String main() {
 	abc!push(U8(99));
 	checks!check(String(abc) == "abc" and String(List(U8)) == "");
 
-	// Ranges of a List: appended in one copy, compared and hashed; sorted
-	// (experiment); and a float read from a range of a string's bytes
-	// (experiment).
+	// Ranges of a List: appended in one copy, compared and hashed; sorted;
+	// and a float read from a range of a string's bytes.
 	nums List<Int> = List(Int);
 	nums!push(Int(1));
 	nums!push(Int(2));
