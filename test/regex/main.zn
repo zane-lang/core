@@ -3,9 +3,10 @@ package test;
 import core$;
 import regex$;
 
-/// The checks a test program has run. Each prints `yes` or `no` as it runs,
-/// and `finish` aborts when any failed, naming them, so the program ends
-/// with a failing status and `zane test` fails.
+/// Records the checks a test program runs. Each check prints `yes` or `no`
+/// as it runs. `finish` aborts when any check failed and lists the failed
+/// checks' numbers, so the program exits with a failing status and
+/// `zane test` fails.
 type Checks = #struct {
 	_console Console;
 	_count Int;
@@ -20,14 +21,14 @@ Checks() => init{
 	_failed = String("");
 }
 
-/// A check that passed.
+/// Records a check that passed and prints `yes`.
 Unit pass(this Checks) mut {
 	this._count = this._count + 1;
 	this._console!print("yes");
 	return Unit();
 }
 
-/// A check that failed, reported as `report`.
+/// Records a check that failed and prints `report`.
 Unit fail(this Checks, report String) mut {
 	this._count = this._count + 1;
 	this._failures = this._failures + 1;
@@ -36,7 +37,8 @@ Unit fail(this Checks, report String) mut {
 	return Unit();
 }
 
-/// Passes when `ok` holds, and fails as `no` otherwise.
+/// Records a passed check when `ok` is true, and otherwise a failed check
+/// that prints `no`.
 Unit check(this Checks, ok Bool) mut {
 	ran Bool = if(ok) {
 		this!pass();
@@ -47,7 +49,8 @@ Unit check(this Checks, ok Bool) mut {
 	return Unit();
 }
 
-/// Aborts, naming the checks that failed, when any did.
+/// Aborts when any check failed, with a message that counts the failed
+/// checks and lists their numbers.
 Unit?@primitives$String finish(this Checks) {
 	if(this._failures > 0) {
 		abort @primitives$String(String(this._failures) + " of " + String(this._count) + " checks failed:" + this._failed);
@@ -55,7 +58,7 @@ Unit?@primitives$String finish(this Checks) {
 	return Unit();
 }
 
-/// Every match of `m` as `start+count`, space-separated.
+/// Every match in `all` written as `start+count`, separated by spaces.
 String spans(all List<Match>) {
 	out String = String("");
 	i Int = Int(1);
@@ -68,7 +71,7 @@ String spans(all List<Match>) {
 	return out;
 }
 
-/// The groups of `c`, group 0 first, as `spans` writes matches.
+/// The groups of `c`, group 0 first, written in the format of `spans`.
 String groups(c Captures) {
 	all List<Match> = List(Match);
 	found Bool = c:found();
@@ -81,8 +84,9 @@ String groups(c Captures) {
 	return spans(all);
 }
 
-/// That `pattern` compiles, that `findAll` on `text` finds `matches` and
-/// `count` counts them, and that `captures` finds `captured`.
+/// Checks that `pattern` compiles, that `findAll` on `text` finds `matches`,
+/// that `count` returns the number of those matches, and that `captures`
+/// finds `captured`.
 Unit expect(this Checks, pattern String, text String, matches String, captured String) mut {
 	r Regex = compile(pattern) ? e {
 		this!fail("no: " + pattern + " does not compile: " + e.message);
@@ -100,7 +104,8 @@ Unit expect(this Checks, pattern String, text String, matches String, captured S
 	return Unit();
 }
 
-/// That `pattern` does not compile, failing at byte `at`.
+/// Checks that `pattern` does not compile and that the error is at byte
+/// `at`.
 Unit refuse(this Checks, pattern String, at Int) mut {
 	r Regex = compile(pattern) ? e {
 		ran Bool = if(e.at == at) {
@@ -210,11 +215,12 @@ Unit?@primitives$String main() {
 	checks!expect("<(\\w+)>", "<a><bc>", "1+3 4+4", "1+3 2+1");
 	checks!expect("()", "ab", "1+0 2+0 3+0", "1+0 1+0");
 
-	// An empty match never comes right where the previous match ended.
+	// No empty match starts right where the previous match ended.
 	checks!expect("a*", "aab", "1+2 4+0", "1+2");
 	checks!expect("x*", "", "1+0", "1+0");
 
-	// A search from a byte, whose assertions still see the bytes before.
+	// A search that starts at a given byte; assertions still test the bytes
+	// before that byte.
 	r Regex = compile("\\b\\w") ? e {
 		abort @primitives$String("a pattern did not compile: " + e.message);
 	}
@@ -241,7 +247,8 @@ Unit?@primitives$String main() {
 	all List<Captures> = d:capturesAll(text);
 	checks!check(all:size() == 2);
 	checks!check(all[Int(2)]:named("day"):text(text) == "05");
-	// Group 3, unnamed, matched there: no name finds it, the empty one neither.
+	// Group 3 is unnamed and took part in the match: no name finds group 3,
+	// and neither does the empty name.
 	checks!check(all[Int(2)]:group(Int(3)):found() and all[Int(2)]:named(""):found() == Bool(false));
 	checks!check(all[Int(2)]:group(Int(0)):end() == 26);
 	later Captures = d:capturesFrom(text, Int(5));
@@ -250,8 +257,8 @@ Unit?@primitives$String main() {
 	checks!check(none:found() == Bool(false));
 	checks!check(none:group(Int(1)):found() == Bool(false));
 
-	// A pattern whose DFAs would grow past their limit is searched by the
-	// Pike VM, with the same results.
+	// The Pike VM searches for a pattern whose DFAs would grow past their
+	// size limit, and finds the same results.
 	big Regex = compile("[ab]*a[ab]{14}") ? e {
 		abort @primitives$String("a pattern did not compile: " + e.message);
 	}
@@ -259,13 +266,14 @@ Unit?@primitives$String main() {
 	checks!check(big:count("abbbbbbbbbbbbbbb ababababababababab") == 2);
 	checks!check(groups(big:captures("aaaaaaaaaaaaaaa")) == "1+15");
 
-	// The fallback where a pattern does not compile matches nothing.
+	// `Regex.never()`, the fallback when a pattern does not compile, matches
+	// nothing.
 	never Regex = compile("(") ?? Regex.never();
 	checks!check(never:isMatch("") == Bool(false));
 	checks!check(never:count("abc") == 0);
 	checks!check(never:find("abc"):found() == Bool(false));
 
-	// What does not compile, and where it is found.
+	// Patterns that do not compile, and the byte position of each error.
 	checks!refuse("(ab", Int(4));
 	checks!refuse("ab)", Int(3));
 	checks!refuse("[ab", Int(4));

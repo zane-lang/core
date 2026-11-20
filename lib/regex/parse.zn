@@ -3,12 +3,12 @@ package regex;
 import core$;
 import math$;
 
-// The pattern being parsed and compiled: its syntax tree, its byte sets
-// and its program, the DFA being built, and the first error found.
+// The state of parsing and compiling one pattern: the pattern's syntax tree,
+// byte sets and program, the DFA being built, and the first error found.
 type _Builder = #struct {
 	pattern String;
 	at Int;
-	// The flags in force: `i`, `m` and `s`.
+	// The flags `i`, `m` and `s` that apply at the current position.
 	insensitive Bool;
 	multiline Bool;
 	dotAll Bool;
@@ -17,35 +17,41 @@ type _Builder = #struct {
 	errorAt Int;
 	groups Int;
 	names List<String>;
-	// A counted repeat's bounds, as `quantifier` read them.
+	// The bounds of the counted repeat that `quantifier` read last.
 	low Int;
 	high Int;
-	// Nodes: kind 1 empty, 2 a byte of set `one`, 3 `one` then `two`, 4
-	// `one` or else `two`, 5 `one` repeated `low` to `high` times (high -1:
-	// no end), greedily or not, 6 `one` captured as group `two`, 7 the
-	// assertion `one` (_assertions).
+	// Syntax tree nodes, by kind: 1 the empty pattern, 2 a byte of set
+	// `one`, 3 node `one` followed by node `two`, 4 node `one` or else node
+	// `two`, 5 node `one` repeated `low` to `high` times (a `high` of -1
+	// means no upper bound), greedily or lazily, 6 node `one` captured as
+	// group `two`, 7 the assertion of kind `one` (see _assertions).
 	kinds List<Int>;
 	ones List<Int>;
 	twos List<Int>;
 	lows List<Int>;
 	highs List<Int>;
 	greedy List<Bool>;
-	// Which assertions the pattern holds, by kind.
+	// For each assertion kind, whether the pattern contains an assertion of
+	// that kind.
 	asserts List<Bool>;
-	// Byte sets, 256 to a set: byte b of set k at (k-1)*256+b+1.
+	// Byte sets, 256 flags per set: the flag of byte b in set k is at
+	// element (k-1)*256+b+1.
 	sets List<Bool>;
-	// Instructions: op 0 match, 1 a byte of set `x` then `y`, 2 split to `x`
-	// first and `y` second, 3 the assertion `x` then `y`, 4 save the
-	// position in slot `x` (from 0) then `y`.
+	// Instructions, by op: 0 match; 1 a byte of set `x`, then go to `y`; 2
+	// split to `x` first and `y` second; 3 the assertion of kind `x`, then go
+	// to `y`; 4 save the position in slot `x` (counted from 0), then go to
+	// `y`.
 	ops List<Int>;
 	xs List<Int>;
 	ys List<Int>;
-	// Emitting a part whose assertions are only skipped over.
+	// Whether `emit` is emitting a part whose assertions are skipped over
+	// instead of tested.
 	loose Bool;
-	// The DFA being built. Each state's kernel, the instructions its last
-	// byte led to, back to back, where each starts, its context and
-	// whether a match ended before its last byte; its key and the index of
-	// the keys, and the transitions found so far.
+	// The DFA being built. For each state: its kernel (the instructions
+	// that the state's last byte led to, stored back to back, with the start
+	// of each state's kernel), its context, and whether a match ended before
+	// its last byte. Then the states' keys, the index of those keys, and the
+	// transitions found so far.
 	classes List<I32>;
 	reps List<Int>;
 	lists List<Int>;
@@ -55,14 +61,16 @@ type _Builder = #struct {
 	keys List<U8>;
 	index _Index;
 	trans List<Int>;
-	// The DFA's assertions' needs: whether a context tells the start of
-	// the text, the start of a line, and a word byte before.
+	// Which context bits the DFA's assertions need: whether a context
+	// records the start of the text, the start of a line, and a preceding
+	// word byte.
 	needStart Bool;
 	needLine Bool;
 	needWord Bool;
 	overflow Bool;
-	// The closure being found: its byte instructions in priority order,
-	// whether it reached a match, and the round that marks what it saw.
+	// The closure being computed: its byte instructions in priority order,
+	// whether it reached a match instruction, and the round number that
+	// marks the instructions the closure has already visited.
 	list List<Int>;
 	matched Bool;
 	seen List<Int>;
@@ -70,7 +78,8 @@ type _Builder = #struct {
 	kernel List<Int>;
 	marks List<Int>;
 	markRound Int;
-	// The analysis's scratch: a byte set, and the pattern's top-level items.
+	// Scratch space for the analysis: a byte set, and the items of the
+	// pattern's top-level concatenation.
 	acc List<Bool>;
 	items List<Int>;
 }
@@ -126,7 +135,8 @@ _Builder(pattern String) => init{
 
 Int _none() => Int(0) - Int(1);
 
-// The first error, at the pattern's position.
+// Records `message` as the error at the current position of the pattern,
+// unless an earlier error is already recorded.
 Unit fail(this _Builder, message String) mut {
 	if(~this.failed) {
 		this.failed = Bool(true);
@@ -138,7 +148,8 @@ Unit fail(this _Builder, message String) mut {
 
 // --- parsing ---------------------------------------------------------------
 
-// The next byte of the pattern, or -1 past its end.
+// The byte of the pattern at the current position, or -1 past the end of
+// the pattern.
 Int peek(this _Builder) {
 	if(this.at > this.pattern:byteCount()) {
 		return _none();
@@ -201,7 +212,7 @@ Unit addRange(this _Builder, set Int, low Int, high Int) mut {
 
 Bool has(this _Builder, set Int, b Int) => this.sets[(set - 1) * 256 + b + 1];
 
-// Every byte of set `other` added to set `set`.
+// Adds every byte of set `other` to set `set`.
 Unit addSet(this _Builder, set Int, other Int) mut {
 	b Int = Int(0);
 	b!to(Int(255)) {
@@ -212,7 +223,7 @@ Unit addSet(this _Builder, set Int, other Int) mut {
 	return Unit();
 }
 
-// The other case of every ASCII letter in the set added.
+// Adds to `set` the other case of every ASCII letter in `set`.
 Unit fold(this _Builder, set Int) mut {
 	b Int = Int(65);
 	b!to(Int(90)) {
@@ -232,9 +243,9 @@ Unit invert(this _Builder, set Int) mut {
 	return Unit();
 }
 
-// A named class's bytes added: 1 digit, 2 alpha, 3 alnum, 4 word, 5
-// space, 6 upper, 7 lower, 8 punct, 9 xdigit, 10 cntrl, 11 print, 12
-// graph, 13 blank, 14 ascii.
+// Adds to `set` the bytes of the named class `which`: 1 digit, 2 alpha,
+// 3 alnum, 4 word, 5 space, 6 upper, 7 lower, 8 punct, 9 xdigit, 10 cntrl,
+// 11 print, 12 graph, 13 blank, 14 ascii.
 Unit addClass(this _Builder, set Int, which Int) mut {
 	if(which == 1 or which == 3 or which == 4 or which == 9) {
 		this!addRange(set, Int(48), Int(57));
@@ -282,8 +293,9 @@ Unit addClass(this _Builder, set Int, which Int) mut {
 	return Unit();
 }
 
-// The class of an escape's letter, \d \w \s and their capitals: its
-// number for addClass, negative for a capital; 0 for any other letter.
+// The class number, as `addClass` takes it, for the letter of the escapes
+// \d, \w and \s and their capitals; the number is negative for a capital
+// letter, and 0 for any other letter.
 Int _escapeClass(letter Int) {
 	if(letter == 100) {
 		return Int(1);
@@ -306,8 +318,8 @@ Int _escapeClass(letter Int) {
 	return Int(0);
 }
 
-// The byte an escape's letter stands for: \n \t \r \f \v \a; -1 for any
-// other letter.
+// The byte that the escapes \n, \t, \r, \f, \v and \a stand for, by the
+// escape's letter; -1 for any other letter.
 Int _escapeByte(letter Int) {
 	if(letter == 110) {
 		return Int(10);
@@ -334,7 +346,8 @@ Bool _isDigit(b Int) => b >= 48 and b <= 57;
 
 Bool _isAlnum(b Int) => (b >= 48 and b <= 57) or (b >= 65 and b <= 90) or (b >= 97 and b <= 122);
 
-// The value of a hexadecimal digit, or -1.
+// The value of the hexadecimal digit `b`, or -1 when `b` is not a
+// hexadecimal digit.
 Int _hexValue(b Int) {
 	if(_isDigit(b)) {
 		return b - 48;
@@ -348,7 +361,8 @@ Int _hexValue(b Int) {
 	return _none();
 }
 
-// The byte of `\xHH`, from past its `x`; -1 after an error.
+// Reads the digits of `\xHH`, starting after the `x`, and returns the
+// byte; returns -1 after an error.
 Int hexEscape(this _Builder) mut {
 	high Int = _hexValue(this:peek());
 	low Int = _hexValue(this:peekAt(Int(1)));
@@ -361,9 +375,9 @@ Int hexEscape(this _Builder) mut {
 	return high * 16 + low;
 }
 
-// A set holding the class `which` (negative: its complement). The class
-// is folded before its complement is taken, so `(?i)[[:^lower:]]` holds no
-// letter of either case.
+// A new set holding the class `which`, or its complement when `which` is
+// negative. The class is case-folded before the complement is taken, so
+// `(?i)[[:^lower:]]` holds no letter of either case.
 Int classSet(this _Builder, which Int) mut {
 	set Int = this!newSet();
 	positive Bool = if(which > 0) {
@@ -380,7 +394,8 @@ Int classSet(this _Builder, which Int) mut {
 	return set;
 }
 
-// A set of one byte, of both its cases where folded.
+// A new set holding byte `b`, and also the other case of `b` when the
+// pattern is case-insensitive at this position.
 Int literal(this _Builder, b Int) mut {
 	set Int = this!newSet();
 	this!addRange(set, b, b);
@@ -391,7 +406,8 @@ Int literal(this _Builder, b Int) mut {
 	return set;
 }
 
-// A POSIX class, `[:name:]` or `[:^name:]`, from its `[`, added to `set`.
+// Reads a POSIX class, `[:name:]` or `[:^name:]`, starting at its `[`, and
+// adds its bytes to `set`.
 Unit parsePosix(this _Builder, set Int) mut {
 	this!skip();
 	this!skip();
@@ -469,8 +485,9 @@ Unit parsePosix(this _Builder, set Int) mut {
 	return Unit();
 }
 
-// One item of a class: the byte it stands for, or -1 where it was a
-// named class, added to `set`; -1 after an error.
+// Reads one item of a bracket class and adds its bytes to `set`. Returns
+// the byte that the item stands for, or -1 when the item is a named class
+// or an error occurred.
 Int classByte(this _Builder, set Int) mut {
 	c Int = this:peek();
 	this!skip();
@@ -503,7 +520,7 @@ Int classByte(this _Builder, set Int) mut {
 	return e;
 }
 
-// A class, from past its `[` to past its `]`.
+// Reads a bracket class, from after its `[` to after its `]`.
 Int parseClass(this _Builder) mut {
 	set Int = this!newSet();
 	negated Bool = this:peek() == 94;
@@ -564,8 +581,8 @@ Int parseClass(this _Builder) mut {
 	return set;
 }
 
-// A group, from past its `(`: capturing, named, non-capturing, or one
-// that sets flags.
+// Reads a group, starting after its `(`: a capturing group, a named group,
+// a non-capturing group, or a group that sets flags.
 Int parseGroup(this _Builder) mut {
 	insensitive Bool = this.insensitive;
 	multiline Bool = this.multiline;
@@ -611,14 +628,15 @@ Int parseGroup(this _Builder) mut {
 				guard(this.failed);
 				c Int = this:peek();
 				if(c == 41) {
-					// (?flags): they hold to the end of the enclosing group.
+					// (?flags): the flags apply to the end of the enclosing
+					// group.
 					this!skip();
 					return this!empty();
 				}
 				if(c == 58) {
 					this!skip();
 					capture = Bool(false);
-					// The body follows.
+					// The group's body follows.
 					return this!groupBody(capture, name, insensitive, multiline, dotAll);
 				}
 				known Bool = Bool(false);
@@ -656,7 +674,8 @@ Int parseGroup(this _Builder) mut {
 	return this!groupBody(capture, name, insensitive, multiline, dotAll);
 }
 
-// A group's body, to past its `)`, the flags then as they were before it.
+// Reads a group's body, up to and past its `)`, then restores the flags
+// that applied before the group.
 Int groupBody(this _Builder, capture Bool, name String, insensitive Bool, multiline Bool, dotAll Bool) mut {
 	number Int = Int(0);
 	if(capture) {
@@ -683,7 +702,7 @@ Int groupBody(this _Builder, capture Bool, name String, insensitive Bool, multil
 	return inner;
 }
 
-// An escape outside a class, from its `\`.
+// Reads an escape outside a bracket class, starting at its `\`.
 Int parseEscape(this _Builder) mut {
 	this!skip();
 	e Int = this:peek();
@@ -772,8 +791,9 @@ Int parseAtom(this _Builder) mut {
 	return this!byteNode(set);
 }
 
-// A decimal number at the pattern's position, every digit of it read, or
-// -1 if none; past 1000 it reads as 1001, which no bound may be.
+// Reads every digit of the decimal number at the current position and
+// returns the number, or -1 when there is no digit. A number above 1000 is
+// returned as 1001, which is above the largest allowed bound.
 Int number(this _Builder) mut {
 	n Int = _none();
 	k Int = Int(1);
@@ -794,8 +814,9 @@ Int number(this _Builder) mut {
 	return n;
 }
 
-// Whether a counted repeat, `{n}`, `{n,}` or `{n,m}`, starts here; if so
-// it is read, its bounds in `low` and `high`. Otherwise nothing is read.
+// Whether a counted repeat, `{n}`, `{n,}` or `{n,m}`, starts at the current
+// position. If one does, reads it and stores its bounds in `low` and
+// `high`; otherwise reads nothing.
 Bool quantifier(this _Builder) mut {
 	if(this:peek() ~= 123) {
 		return Bool(false);
@@ -818,7 +839,7 @@ Bool quantifier(this _Builder) mut {
 	return Bool(true);
 }
 
-// Whether a repeat operator starts here, reading nothing.
+// Whether a repeat operator starts at the current position; reads nothing.
 Bool repeatAhead(this _Builder) mut {
 	c Int = this:peek();
 	if(c == 42 or c == 43 or c == 63) {
@@ -921,8 +942,8 @@ Int parseAlt(this _Builder) mut {
 	return out;
 }
 
-// The bytes of `text` from position `start` to `end` (from 0, the end
-// past the last byte).
+// The bytes of `text` from position `start` to position `end`, both counted
+// from 0, with `end` just past the last byte.
 String _slice(text String, start Int, end Int) {
 	bytes List<U8> = List(U8);
 	i Int = start + 1;

@@ -3,19 +3,20 @@ package regex;
 import core$;
 import math$;
 
-// The Pike VM: the NFA run on every thread at once, each thread with its
-// own groups' positions, in priority order, so the first thread to reach
-// a match has the leftmost-first match's groups.
+// The Pike VM runs all threads of the NFA at once, in priority order, and
+// each thread keeps its own group positions, so the first thread to reach
+// a match holds the groups of the leftmost-first match.
 
 type _Pike = #struct {
-	// The next position's threads: their instructions, and their slots,
-	// `width` to a thread.
+	// The threads for the next position: their instructions, and their
+	// slots, `width` slots per thread.
 	pcs List<Int>;
 	slots List<Int>;
 	width Int;
-	// The slots of the thread being followed.
+	// The slots of the thread that `add` is following.
 	current List<Int>;
-	// The round that marks what the closure being found saw.
+	// The round number that marks the instructions the current closure has
+	// already visited.
 	marks List<Int>;
 	round Int;
 }
@@ -28,8 +29,8 @@ _Pike(width Int, size Int) => init{
 	round = Int(0);
 }
 
-// The context of position `i` (from 0): bit 1 the start of the text, 2
-// the start of a line, 4 a word byte before.
+// The context of position `i` (counted from 0): bit 1 for the start of the
+// text, bit 2 for the start of a line, bit 4 for a preceding word byte.
 Int _contextOf(text String, i Int) {
 	if(i == 0) {
 		return Int(3);
@@ -45,16 +46,18 @@ Int _contextOf(text String, i Int) {
 	return ctx;
 }
 
-// The threads that instruction `pc0` leads to at position `pos` without
-// consuming a byte, with the current slots, added after those there are.
+// Adds, after the threads already queued, the threads that instruction
+// `pc0` reaches at position `pos` without consuming a byte, with the
+// current slots.
 Unit add(this _Pike, re Regex, text String, pc0 Int, pos Int) mut {
 	ctx Int = _contextOf(text, pos);
 	next Int = _none();
 	if(pos < text:byteCount()) {
 		next = Int(text:byteAt(pos + 1));
 	}
-	// Pairs: an instruction to follow and 0, or minus a slot (from 1) and
-	// the value to put back in it once what follows is done.
+	// A stack of pairs: an instruction to follow and 0, or a negated slot
+	// number (counted from 1) and the value to restore in that slot once
+	// the instructions after the save are done.
 	stack List<Int> = List(Int);
 	p Int = pc0;
 	stack!push(p);
@@ -107,10 +110,10 @@ Unit add(this _Pike, re Regex, text String, pc0 Int, pos Int) mut {
 	return Unit();
 }
 
-// The slots of the leftmost-first match that starts at `from` (from 0)
-// where `anchored`, or at or after it, every one -1 where there is none;
-// where `limit` is not -1, no further than that position, where the
-// match is known to end.
+// The slots of the leftmost-first match that starts at position `from`
+// (counted from 0) when `anchored` is set, or at or after `from` otherwise.
+// Every slot is -1 when there is no match. When `limit` is not -1, the
+// search stops at position `limit`, where the match is known to end.
 List<Int> _pike(this Regex, text String, from Int, anchored Bool, limit Int) {
 	width Int = (this._groups + 1) * 2;
 	n Int = text:byteCount();

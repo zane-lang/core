@@ -2,9 +2,10 @@ package test;
 
 import core$;
 
-/// The checks a test program has run. Each prints `yes` or `no` as it runs,
-/// and `finish` aborts when any failed, naming them, so the program ends
-/// with a failing status and `zane test` fails.
+/// Records the checks a test program runs. Each check prints `yes` or `no`
+/// as it runs. `finish` aborts when any check failed and lists the failed
+/// checks' numbers, so the program exits with a failing status and
+/// `zane test` fails.
 type Checks = #struct {
 	_console Console;
 	_count Int;
@@ -19,14 +20,14 @@ Checks() => init{
 	_failed = String("");
 }
 
-/// A check that passed.
+/// Records a check that passed and prints `yes`.
 Unit pass(this Checks) mut {
 	this._count = this._count + 1;
 	this._console!print("yes");
 	return Unit();
 }
 
-/// A check that failed, reported as `report`.
+/// Records a check that failed and prints `report`.
 Unit fail(this Checks, report String) mut {
 	this._count = this._count + 1;
 	this._failures = this._failures + 1;
@@ -35,7 +36,8 @@ Unit fail(this Checks, report String) mut {
 	return Unit();
 }
 
-/// Passes when `ok` holds, and fails as `no` otherwise.
+/// Records a passed check when `ok` is true, and otherwise a failed check
+/// that prints `no`.
 Unit check(this Checks, ok Bool) mut {
 	ran Bool = if(ok) {
 		this!pass();
@@ -46,7 +48,8 @@ Unit check(this Checks, ok Bool) mut {
 	return Unit();
 }
 
-/// Aborts, naming the checks that failed, when any did.
+/// Aborts when any check failed, with a message that counts the failed
+/// checks and lists their numbers.
 Unit?@primitives$String finish(this Checks) {
 	if(this._failures > 0) {
 		abort @primitives$String(String(this._failures) + " of " + String(this._count) + " checks failed:" + this._failed);
@@ -64,24 +67,28 @@ Int firstAbove(values List<Int>, limit Int) {
 	return Int(0);
 }
 
-/// A value type that holds a list, which is legal since a `List` is a value.
+/// A value type that holds a list; a value type may hold a `List` because a
+/// `List` is a value.
 type Shelf = struct {
 	labels List<String>;
 }
 Shelf(labels List<String>) => init{ labels; }
 
-/// An owner, which a `ListRef` and an `ArrayRef` hold and a `List` cannot.
+/// An owner type: a `ListRef` and an `ArrayRef` can hold owners, and a `List`
+/// cannot.
 type Jar = #struct {
 	beans Int;
 }
 Jar(beans Int) => init{ beans; }
-/// Adds `count` beans, through whatever names the jar.
+/// Adds `count` beans to the jar, through any owner or reference that names
+/// the jar.
 Unit add(this Jar, count Int) mut {
 	this.beans = this.beans + count;
 	return Unit();
 }
 
-/// A worker's state: steps taken, up to a limit.
+/// A worker's state: the number of steps taken, and the number of steps
+/// after which the worker stops.
 type Steps = struct {
 	taken Int;
 	limit Int;
@@ -99,7 +106,7 @@ Unit printUnlessStopped(this Checks, stop Bool) mut {
 Unit?@primitives$String main() {
 	checks Checks();
 
-	// Int, Float and their operators.
+	// Int, Float and the operators on them.
 	res Float = Float(3.0) * 3.0;
 	checks!check(res == 9.0);
 	checks!check(Int(7) - Int(2) == 5);
@@ -122,7 +129,7 @@ Unit?@primitives$String main() {
 	checks!check(yes and true and ~(no or false) and true or no);
 	checks!check(yes == true and false == no and ~(true == no));
 
-	// A literal operand on either side.
+	// Operators with a literal operand on either side.
 	checks!check(1 < Int(2) and 3 * Int(2) == 6 and 7 - Int(2) == 5);
 	checks!check(1.5 < Float(2.0) and 3.0 / Float(2.0) == 1.5);
 	checks!check(Int(7) - 2 == 5 and Float(7.0) - 2.5 == 4.5);
@@ -139,8 +146,9 @@ Unit?@primitives$String main() {
 	checks!check(String(yes) == "true" and String(no) == "false");
 	checks!check("ok: " + String(Int(1) < Int(2)) == "ok: true");
 
-	// A literal: a value interpolated into it is copied in, and its text
-	// escapes are read in its own text, never in that value.
+	// A string literal: a value interpolated into the literal is copied in,
+	// and escapes are read only in the literal's own text, never in the
+	// interpolated value.
 	checks!check(String("say \%greeting!") == "say hello!");
 	checks!check(String("\n") == String(@primitives$String.escaped("\n")));
 	checks!check(String("\n") ~= String(@primitives$String("\n")));
@@ -169,7 +177,7 @@ Unit?@primitives$String main() {
 	}
 	checks!check(same);
 
-	// The thread pool, sized through the runtime.
+	// Setting the thread pool's size through the runtime.
 	refused Bool = Bool(false);
 	runtime!setThreads(Int(0)) ? e {
 		refused = Bool(true);
@@ -223,17 +231,17 @@ Unit?@primitives$String main() {
 	checks!check(refs:size() == 3);
 	refs[Int(3)] = Int(60);
 	checks!check(refs[Int(1)] + refs[Int(3)] == 64);
-	// ArrayRef.roaming: owners moved in, a temporary and a roaming owner,
-	// whose elements are then changed in place.
+	// ArrayRef.roaming: two owners are moved in, a temporary and a roaming
+	// owner, and then the elements are changed in place.
 	loose ^Jar = Jar(Int(2));
 	stood ArrayRef<Jar, 2> = ArrayRef.roaming([Jar(Int(1)), loose]);
 	stood[Int(2)].beans = stood[Int(2)].beans * 10;
 	checks!check(stood:size() == 2 and stood[Int(1)].beans == 1 and stood[Int(2)].beans == 20);
-	// Values are copied in, as by `ArrayRef`.
+	// ArrayRef.roaming copies values in, as `ArrayRef` does.
 	pair ArrayRef<Int, 2> = ArrayRef.roaming([Int(7), Int(8)]);
 	checks!check(pair[Int(1)] + pair[Int(2)] == 15);
-	// ArrayRef.refs: a reference to each settled owner, read through and
-	// used to change the owner it names.
+	// ArrayRef.refs: one reference per settled owner. The test reads through
+	// each reference and uses it to change the owner it names.
 	red Jar(Int(3));
 	blue Jar(Int(4));
 	picks ArrayRef<&Jar, 2> = ArrayRef.refs([red, blue]);
@@ -242,13 +250,13 @@ Unit?@primitives$String main() {
 	checks!check(blue.beans == 44);
 	picks[Int(1)] = blue;
 	checks!check(picks[Int(1)].beans == 44);
-	// An `&` value is copied in, by `ArrayRef.refs` or by `ArrayRef`.
+	// Both `ArrayRef.refs` and `ArrayRef` copy an `&` value in.
 	held &Jar = red;
 	twice ArrayRef<&Jar, 2> = ArrayRef([held, held]);
 	both ArrayRef<&Jar, 2> = ArrayRef.refs([blue, held]);
 	checks!check(twice[Int(2)].beans == 3 and both[Int(1)].beans == 44 and both[Int(2)].beans == 3);
-	// ArrayRef.fill: each element made from its position, counted from 1,
-	// for values and for owners.
+	// ArrayRef.fill: each element is made from its position, counted from 1,
+	// for elements that are values and for elements that are owners.
 	squares ArrayRef<Int, 4> = ArrayRef.fill(4, Int(i Int) => i * i);
 	checks!check(squares:size() == 4 and squares[Int(1)] == 1 and squares[Int(4)] == 16);
 	shelf2 ArrayRef<Jar, 3> = ArrayRef.fill(3, ^Jar(i Int) => Jar(i * 10));
@@ -270,7 +278,7 @@ Unit?@primitives$String main() {
 	words!push("b");
 	checks!check(words[Int(1)] + words[Int(2)] == "ab");
 
-	// A List of n copies of one value.
+	// A List of n copies of a value.
 	zeros List<I32> = List(Int(1000), I32(0));
 	checks!check(zeros:size() == 1000);
 	checks!check(zeros[Int(1)] == 0 and zeros[Int(1000)] == 0);
@@ -284,7 +292,8 @@ Unit?@primitives$String main() {
 	checks!check(none:size() == 1 and none[Int(1)] == 8);
 	flags List<Bool> = List(Int(3), Bool(false));
 	checks!check(flags:size() == 3 and ~flags[Int(3)]);
-	// Each copy owns its own bytes: changing one leaves the others.
+	// Each copy owns its own bytes: changing one copy leaves the other copies
+	// unchanged.
 	marks List<String> = List(Int(3), String("ab"));
 	marks[Int(2)] = marks[Int(2)] + "c";
 	checks!check(marks[Int(1)] + marks[Int(2)] + marks[Int(3)] == "ababcab");
@@ -292,7 +301,8 @@ Unit?@primitives$String main() {
 	nested[Int(1)]!push(Int(9));
 	checks!check(nested[Int(1)]:size() == 3 and nested[Int(2)]:size() == 2);
 
-	// Removing from a List: in order, and by moving the last one in.
+	// Removing from a List: keeping the order, and by moving the last element
+	// into the gap.
 	checks!check(list!remove(Int(2)) == 4);
 	checks!check(list:size() == 4);
 	checks!check(list[Int(2)] == 9);
@@ -306,7 +316,7 @@ Unit?@primitives$String main() {
 	checks!check(words:size() == 1);
 	checks!check(words[Int(1)] == "c");
 
-	// A List is a value: a copy owns elements of its own.
+	// A List is a value: a copy of a List owns its own elements.
 	copied List<String> = words;
 	copied!push("d");
 	copied[Int(1)] = String("e");
@@ -363,7 +373,7 @@ Unit?@primitives$String main() {
 	checks!check((Int(~9223372036854775807) - 1):hex() == "-8000000000000000");
 	checks!check(String(big) == "2147483647");
 
-	// U8: a byte that widens without its sign.
+	// U8: a byte that converts to `Int` as an unsigned value.
 	byte U8 = U8(200);
 	checks!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
 	checks!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
@@ -386,8 +396,8 @@ Unit?@primitives$String main() {
 	abc!push(U8(99));
 	checks!check(String(abc) == "abc" and String(List(U8)) == "");
 
-	// Ranges of a List: appended in one copy, compared and hashed; sorted;
-	// and a float read from a range of a string's bytes.
+	// Ranges of a List: appending a range in one copy, comparing and hashing
+	// ranges, sorting, and reading a float from a range of a string's bytes.
 	nums List<Int> = List(Int);
 	nums!push(Int(1));
 	nums!push(Int(2));
@@ -401,7 +411,7 @@ Unit?@primitives$String main() {
 	checks!check(nums[Int(1)] == 1 and nums[Int(2)] == 2 and nums[Int(3)] == 2 and nums[Int(5)] == 3);
 	abc!sort();
 	checks!check(String(abc) == "abc");
-	// Bytes sort unsigned: 128 and 255 come after 127.
+	// Bytes sort as unsigned values: 128 and 255 come after 127.
 	mixed List<U8> = List(U8);
 	mixed!push(U8(255));
 	mixed!push(U8(1));
@@ -415,8 +425,8 @@ Unit?@primitives$String main() {
 	checks!check(nums:sameRange(Int(4), tail, Int(3), Int(1)) and ~nums:sameRange(Int(4), tail, Int(1), Int(2)));
 	checks!check(nums:hashRange(Int(2), Int(2)) == nums:hashRange(Int(2), Int(2)));
 	checks!check(nums:hashRange(Int(4), Int(1)) == tail:hashRange(Int(1), Int(1)));
-	// copyRange: a range of another list copied over this one's, at either
-	// end, and a copy of nothing.
+	// copyRange: copying a range of another list over a range of this list,
+	// at either end of this list, and copying zero elements.
 	over List<Int> = List(Int);
 	o Int = Int(1);
 	o!to(6) { over!push(o * 10); }
@@ -426,8 +436,8 @@ Unit?@primitives$String main() {
 	checks!check(over[Int(6)] == 3 and over[Int(5)] == 50);
 	over!copyRange(1, tail, 1, 0);
 	checks!check(over[Int(1)] == 10 and over:size() == 6);
-	// sortBy: positions from 1 in the keys, sorted by the key at each: the
-	// two positions of key 5 keep their order.
+	// sortBy: positions into the keys, counted from 1, sorted by the key at
+	// each position, so the two positions of key 5 keep their order.
 	keys List<Int> = List(Int);
 	keys!push(Int(5));
 	keys!push(Int(2));
@@ -480,13 +490,13 @@ Unit?@primitives$String main() {
 	counts!push(big);
 	checks!check(counts[Int(1)] == 7 and counts[Int(2)] == big);
 
-	// A call whose arguments are all literals takes Int or Float.
+	// A call whose arguments are all literals uses Int or Float.
 	checks!check(Float(139968) == 139968.0 and Float(2.5) == 2.5);
 	checks!check(String(5) == "5" and String(2.5) == "2.5");
 	checks!check(Int(3) == 3 and I32(3) == 3);
 
-	// Workers: a step run until it returns false, with and without a wait,
-	// and spawned.
+	// Workers: a step that runs until it returns false, with and without a
+	// wait between steps, and a spawned worker.
 	steps Steps(5);
 	steps!work(Bool(this Steps) mut {
 		this.taken = this.taken + 1;
