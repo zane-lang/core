@@ -227,6 +227,12 @@ Unit?@primitives$String main() {
 	// Values are copied in, as by `ArrayRef`.
 	pair ArrayRef<Int, 2> = ArrayRef.roaming([Int(7), Int(8)]);
 	checks!check(pair[Int(1)] + pair[Int(2)] == 15);
+	// ArrayRef.fill: each element made from its position, counted from 1,
+	// for values and for owners.
+	squares ArrayRef<Int, 4> = ArrayRef.fill(4, Int(i Int) => i * i);
+	checks!check(squares:size() == 4 and squares[Int(1)] == 1 and squares[Int(4)] == 16);
+	shelf2 ArrayRef<Jar, 3> = ArrayRef.fill(3, ^Jar(i Int) => Jar(i * 10));
+	checks!check(shelf2[Int(1)].beans == 10 and shelf2[Int(3)].beans == 30);
 
 	// List.
 	list List<Int> = List(Int);

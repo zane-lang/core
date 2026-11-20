@@ -37,7 +37,7 @@ Bool ==(left @primitives$Bool, right Bool) => Bool(left) == right;
 type Int = struct {
 	_value @primitives$I64;
 }
-Int(v @primitives$I64) => init{
+implicit Int(v @primitives$I64) => init{
 	_value = v;
 }
 implicit Int(v @concepts$Int) => Int(@primitives$I64(v));
