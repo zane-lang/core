@@ -68,7 +68,7 @@ both workers finished
 | `pool!start(element, sources, step)` | adds a worker whose step runs again only when one of `sources` is ready, or when the funnel has changed the state |
 | `pool:state()` | a copy of the shared state |
 | `pool:elements()` | a `List` of a copy of each element, in the order they started |
-| `EventSource.every(interval)` | a timer, ready each time the `Duration` `interval` has passed since it was last ready |
+| `EventSource.every(interval)` | a timer, ready each time the `Duration` `interval` has passed since it was last ready; `register` waits on one too ([control flow](control-flow.md)) |
 
 ## Steps
 
@@ -84,8 +84,9 @@ funnel has changed the state. A timer whose interval is below one nanosecond
 is always ready.
 
 A step is meant never to wait: it reads only values that already exist, and
-then it returns. A step that does wait, for example on a slow call into C,
-keeps its thread while it waits.
+then it returns. A step that does wait, in a `register` or on a spawned
+call's result, holds back only its own worker. A step that blocks in a call
+into C keeps its thread while it waits.
 
 ## Elements and the state
 

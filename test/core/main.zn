@@ -604,21 +604,35 @@ Unit?@primitives$String main() {
 		return this.taken < this.limit;
 	});
 	checks!check(ticks.taken == 3);
+	ticked Steps(4);
+	ticked!register(EventSource.every(Duration.milliseconds(1)), Bool(this Steps) mut {
+		this.taken = this.taken + 1;
+		return this.taken < this.limit;
+	});
+	checks!check(ticked.taken == 4);
 	checks!check(Duration.seconds(2):nanoseconds() == 2000000000);
 	checks!check(Duration.milliseconds(16):nanoseconds() == 16000000);
 	checks!check(Duration.nanoseconds(7):nanoseconds() == 7);
+	// A spawned `register` waits for its timer beside a spawned `work`.
 	spawnedTaken Int = Int(0);
+	timedTaken Int = Int(0);
 	do() {
 		spawned Steps(4);
+		timed Steps(3);
 		do() {
+			spawn timed!register(EventSource.every(Duration.milliseconds(1)), Bool(this Steps) mut {
+				this.taken = this.taken + 1;
+				return this.taken < this.limit;
+			});
 			spawn spawned!work(Bool(this Steps) mut {
 				this.taken = this.taken + 1;
 				return this.taken < this.limit;
 			});
 		}
 		spawnedTaken = spawned.taken;
+		timedTaken = timed.taken;
 	}
-	checks!check(spawnedTaken == 4);
+	checks!check(spawnedTaken == 4 and timedTaken == 3);
 
 	// Worker pools: ten senders publish 55 events to a funnel, which sums
 	// them into the state in order; a pool without state whose elements

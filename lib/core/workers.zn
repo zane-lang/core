@@ -1,9 +1,10 @@
 package core;
 
 // EventSource
-/// A source a worker pool's worker waits on between steps (concurrency.md
-/// §6.3): a timer, ready each time its interval has passed since it was
-/// last ready, and always ready when the interval is below one nanosecond.
+/// A source a worker waits on between steps, in a worker pool
+/// (concurrency.md §6.3) or in `register`: a timer, ready each time its
+/// interval has passed since it was last ready, and always ready when the
+/// interval is below one nanosecond.
 type EventSource = struct {
 	_value @primitives$EventSource;
 }
