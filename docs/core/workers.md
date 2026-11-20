@@ -84,8 +84,8 @@ funnel has changed the state. A timer whose interval is below one nanosecond
 is always ready.
 
 A step is meant never to wait: it reads only values that already exist, and
-then it returns. A step that does wait, in a `register` or on a spawned
-call's result, holds back only its own worker. A step that blocks in a call
+then it returns. A step that does wait, in a `register` call or on a
+spawned call's result, holds back only its own worker. A step that blocks in a call
 into C keeps its thread while it waits.
 
 ## Elements and the state

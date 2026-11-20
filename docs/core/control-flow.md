@@ -66,8 +66,8 @@ change the subject. `work`, `register` and `setInterval` take no block, so
 they may be started with `spawn` to run in the background.
 
 `register` waits for its event source between steps. The wait holds back
-only that worker: every spawned call and every worker pool's worker keeps
-running meanwhile. `EventSource.every(interval)` makes a timer, which is
+only the caller of `register`: every other spawned call and every
+worker pool's worker keeps running meanwhile. `EventSource.every(interval)` makes a timer, which is
 ready each time `interval` has passed since it was last ready; a step
 slower than the interval runs again once, not once for each tick it
 missed. [Worker pools](workers.md) take the same event sources. To run many workers at once, each on an element of
