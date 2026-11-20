@@ -75,6 +75,11 @@ type Jar = #struct {
 	beans Int;
 }
 Jar(beans Int) => init{ beans; }
+/// Adds `count` beans, through whatever names the jar.
+Unit add(this Jar, count Int) mut {
+	this.beans = this.beans + count;
+	return Unit();
+}
 
 /// A worker's state: steps taken, up to a limit.
 type Steps = struct {
@@ -227,6 +232,21 @@ Unit?@primitives$String main() {
 	// Values are copied in, as by `ArrayRef`.
 	pair ArrayRef<Int, 2> = ArrayRef.roaming([Int(7), Int(8)]);
 	checks!check(pair[Int(1)] + pair[Int(2)] == 15);
+	// ArrayRef.refs: a reference to each settled owner, read through and
+	// used to change the owner it names.
+	red Jar(Int(3));
+	blue Jar(Int(4));
+	picks ArrayRef<&Jar, 2> = ArrayRef.refs([red, blue]);
+	checks!check(picks[Int(1)].beans == 3 and picks[Int(2)].beans == 4);
+	picks[Int(2)]!add(Int(40));
+	checks!check(blue.beans == 44);
+	picks[Int(1)] = blue;
+	checks!check(picks[Int(1)].beans == 44);
+	// An `&` value is copied in, by `ArrayRef.refs` or by `ArrayRef`.
+	held &Jar = red;
+	twice ArrayRef<&Jar, 2> = ArrayRef([held, held]);
+	both ArrayRef<&Jar, 2> = ArrayRef.refs([blue, held]);
+	checks!check(twice[Int(2)].beans == 3 and both[Int(1)].beans == 44 and both[Int(2)].beans == 3);
 
 	// List.
 	list List<Int> = List(Int);
