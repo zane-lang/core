@@ -331,6 +331,10 @@ Unit?@primitives$String main() {
 	checks!check(I32.truncate(F32.round(Float(3.9))) == 3);
 	checks!check(Int.truncate(F32.round(Float(3.9))) == 3 and Int.truncate(~F32.round(Float(3.9))) == ~3);
 	checks!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
+	checks!check(Int(255):hex() == "ff" and Int(4096):hex() == "1000" and Int(0):hex() == "0");
+	checks!check(Int(~255):hex() == "-ff" and I32(~1):hex() == "-1" and I32(big):hex() == "7fffffff");
+	checks!check(Int(9223372036854775807):hex() == "7fffffffffffffff");
+	checks!check((Int(~9223372036854775807) - 1):hex() == "-8000000000000000");
 	checks!check(String(big) == "2147483647");
 
 	// U8: a byte that widens without its sign.
@@ -340,6 +344,8 @@ Unit?@primitives$String main() {
 	checks!check(I32(byte) == 200 and I32(U8(255)) + 1 == 256);
 	checks!check(U8.wrap(I32(263)) == 7 and Int(U8.wrap(~I32(1))) == 255);
 	checks!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
+	checks!check(String(byte) == "200" and String(U8(0)) == "0");
+	checks!check(byte:hex() == "c8" and U8(10):hex() == "0a" and U8(0):hex() == "00" and U8(255):hex() == "ff");
 	bytes List<U8> = List(U8);
 	b Int = Int(0);
 	b!to(Int(299)) {
