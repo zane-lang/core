@@ -68,11 +68,12 @@ Every conversion that can drop part of the number has a name, such as
 | `Float(i)` for an `I32` or `F32` | the same number as a `Float` |
 | `Float(i)` for an `Int` | the nearest `Float`, which may differ from the `Int` beyond 2⁵³: `Float(Int(9007199254740993))` is `9007199254740992` |
 | `Int(i)` for an `I32` or `U8` | the same number as an `Int` |
-| `Int.truncate(f)` | an `Int`: the `Float` rounded toward zero, held to the `Int` range |
+| `Int.truncate(f)` | an `Int`: the `Float` or `F32` rounded toward zero, held to the `Int` range |
+| `I32(b)` for a `U8` | the same number as an `I32` |
 | `I32.wrap(i)` | the low 32 bits of an `Int` |
 | `I32.truncate(f)` | an `I32`: the `Float` or `F32` rounded toward zero, held to the `I32` range |
 | `F32.round(x)` | the nearest `F32` to a `Float`, `Int` or `I32` |
-| `U8.wrap(i)` | the low 8 bits of an `Int` |
+| `U8.wrap(i)` | the low 8 bits of an `Int` or `I32` |
 
 ```zane
 package hello;
@@ -85,7 +86,7 @@ Unit main() {
 	console!print(String(Int.truncate(f)) + " " + String(Int.truncate(~f)));
 	console!print(String(Float(Int(3)) / 2.0));
 	console!print(String(I32.wrap(Int(4294967298))));
-	console!print(String(Int(U8.wrap(Int(300)))));
+	console!print(String(U8.wrap(Int(300))));
 	return Unit();
 }
 ```

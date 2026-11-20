@@ -16,8 +16,8 @@ Int size(this Array<T Type, n @concepts$Int>) => Int(n);
 type ArrayRef<T Type, n @concepts$Int> = #struct {
 	_value @primitives$ArrayRef<T, n>;
 }
-/// From an array literal, each element borrowed and copied in, so the
-/// elements are values (generics.md §8.4).
+/// From an array literal, each element borrowed and copied in: values, or
+/// `&` values for an `ArrayRef<&T, n>` (generics.md §8.4).
 ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef(values);
 }
@@ -25,6 +25,11 @@ ArrayRef<T, n>(values @concepts$Array<T Type, n @concepts$Int>) => init{
 /// moves in, and a value is copied.
 ArrayRef<T, n>.roaming(values @concepts$Array<^T Type, n @concepts$Int>) => init{
 	_value = @primitives$ArrayRef.roaming(values);
+}
+/// From an array literal, a reference to each element: a settled owner
+/// mints one, and an `&` value is copied.
+ArrayRef<&T, n>.refs(values @concepts$Array<&T Type, n @concepts$Int>) => init{
+	_value = @primitives$ArrayRef.refs(values);
 }
 /// `n` elements, each made by calling `make` with its position, counted
 /// from 1, in order: `ArrayRef.fill(3, Int(i Int) => i * i)` holds 1, 4
@@ -80,8 +85,10 @@ Unit copyRange(this List<T Type>, at Int, from List<T>, start Int, count Int) mu
 	this._value!copyRange(at._value, from._value, start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): a list of `I32` indices into
-/// `keys` sorted stably by the key each names, ascending.
+/// A list of `I32` positions in the `Int` list `keys`, counted from 1,
+/// sorted in place by the key at each position, ascending. Positions with
+/// equal keys keep their order. A position outside `keys` stops the
+/// program.
 Unit sortBy(this List<T Type>, keys List<K Type>) mut {
 	this._value!sortBy(keys._value);
 	return Unit();

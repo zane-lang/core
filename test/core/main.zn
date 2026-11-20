@@ -75,6 +75,11 @@ type Jar = #struct {
 	beans Int;
 }
 Jar(beans Int) => init{ beans; }
+/// Adds `count` beans, through whatever names the jar.
+Unit add(this Jar, count Int) mut {
+	this.beans = this.beans + count;
+	return Unit();
+}
 
 /// A worker's state: steps taken, up to a limit.
 type Steps = struct {
@@ -227,6 +232,21 @@ Unit?@primitives$String main() {
 	// Values are copied in, as by `ArrayRef`.
 	pair ArrayRef<Int, 2> = ArrayRef.roaming([Int(7), Int(8)]);
 	checks!check(pair[Int(1)] + pair[Int(2)] == 15);
+	// ArrayRef.refs: a reference to each settled owner, read through and
+	// used to change the owner it names.
+	red Jar(Int(3));
+	blue Jar(Int(4));
+	picks ArrayRef<&Jar, 2> = ArrayRef.refs([red, blue]);
+	checks!check(picks[Int(1)].beans == 3 and picks[Int(2)].beans == 4);
+	picks[Int(2)]!add(Int(40));
+	checks!check(blue.beans == 44);
+	picks[Int(1)] = blue;
+	checks!check(picks[Int(1)].beans == 44);
+	// An `&` value is copied in, by `ArrayRef.refs` or by `ArrayRef`.
+	held &Jar = red;
+	twice ArrayRef<&Jar, 2> = ArrayRef([held, held]);
+	both ArrayRef<&Jar, 2> = ArrayRef.refs([blue, held]);
+	checks!check(twice[Int(2)].beans == 3 and both[Int(1)].beans == 44 and both[Int(2)].beans == 3);
 	// ArrayRef.fill: each element made from its position, counted from 1,
 	// for values and for owners.
 	squares ArrayRef<Int, 4> = ArrayRef.fill(4, Int(i Int) => i * i);
@@ -335,14 +355,23 @@ Unit?@primitives$String main() {
 	checks!check(I32.truncate(Float(2.75)) == 2 and I32.truncate(~Float(2.75)) == ~2);
 	checks!check(I32.truncate(Float(1000000000000.0)) == big);
 	checks!check(I32.truncate(F32.round(Float(3.9))) == 3);
+	checks!check(Int.truncate(F32.round(Float(3.9))) == 3 and Int.truncate(~F32.round(Float(3.9))) == ~3);
 	checks!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
+	checks!check(Int(255):hex() == "ff" and Int(4096):hex() == "1000" and Int(0):hex() == "0");
+	checks!check(Int(~255):hex() == "-ff" and I32(~1):hex() == "-1" and I32(big):hex() == "7fffffff");
+	checks!check(Int(9223372036854775807):hex() == "7fffffffffffffff");
+	checks!check((Int(~9223372036854775807) - 1):hex() == "-8000000000000000");
 	checks!check(String(big) == "2147483647");
 
 	// U8: a byte that widens without its sign.
 	byte U8 = U8(200);
 	checks!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
 	checks!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
+	checks!check(I32(byte) == 200 and I32(U8(255)) + 1 == 256);
+	checks!check(U8.wrap(I32(263)) == 7 and Int(U8.wrap(~I32(1))) == 255);
 	checks!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
+	checks!check(String(byte) == "200" and String(U8(0)) == "0");
+	checks!check(byte:hex() == "c8" and U8(10):hex() == "0a" and U8(0):hex() == "00" and U8(255):hex() == "ff");
 	bytes List<U8> = List(U8);
 	b Int = Int(0);
 	b!to(Int(299)) {
@@ -397,8 +426,8 @@ Unit?@primitives$String main() {
 	checks!check(over[Int(6)] == 3 and over[Int(5)] == 50);
 	over!copyRange(1, tail, 1, 0);
 	checks!check(over[Int(1)] == 10 and over:size() == 6);
-	// sortBy: indices from 1 into the keys, sorted stably by the key each
-	// names: the two indices of key 5 keep their order.
+	// sortBy: positions from 1 in the keys, sorted by the key at each: the
+	// two positions of key 5 keep their order.
 	keys List<Int> = List(Int);
 	keys!push(Int(5));
 	keys!push(Int(2));

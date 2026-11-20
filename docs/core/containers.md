@@ -60,13 +60,12 @@ Unit main() {
 | `l!appendOwn(start, count)` | copies `count` elements of the list itself, from `start`, onto the end |
 | `l!copyRange(at, from, start, count)` | copies `count` elements of `from`, from `start`, over the list's own elements, starting at `at` |
 | `l!sort()` | sorts the elements in place, ascending, for lists of `Int`, `I32` or `U8` |
+| `l!sortBy(keys)` | for a `List<I32>` of positions in the `List<Int>` `keys`, counted from 1: sorts the positions by the key at each, ascending, keeping positions with equal keys in order |
 | `l:sameRange(start, other, otherStart, count)` | whether two ranges hold the same elements, for lists of integers |
 | `l:hashRange(start, count)` | a hash of a range, for lists of integers |
 
 `appendRange`, `appendOwn` and `copyRange` are for elements that own no
-memory of their own, such as numbers. `l!sortBy(keys)` sorts a `List<I32>`
-of positions into `keys` by the key at each position. The source marks
-`sortBy` as an experiment, so it may change or go away.
+memory of their own, such as numbers.
 
 A `List` is a value, so copying a list copies its elements, and a value type
 may hold a `List` as a field.
@@ -183,6 +182,41 @@ Unit main() {
 
 ```output
 1 20
+```
+
+`ArrayRef.refs(values)` holds a reference to each element. Each element of
+the literal is a settled owner, from which the call takes a new reference, or
+an existing `&` value, which the call copies. The result is an
+`ArrayRef<&T, n>`. A read through it reaches the owner, and a `mut` method
+called through it changes the owner:
+
+```zane
+package hello;
+
+import core$;
+
+type Jar = #struct {
+	beans Int;
+}
+Jar(beans Int) => init{ beans; }
+Unit add(this Jar, count Int) mut {
+	this.beans = this.beans + count;
+	return Unit();
+}
+
+Unit main() {
+	console Console(@program$console);
+	red Jar(Int(3));
+	blue Jar(Int(4));
+	picks ArrayRef<&Jar, 2> = ArrayRef.refs([red, blue]);
+	picks[Int(2)]!add(Int(40));
+	console!print(String(picks[Int(1)].beans) + " " + String(blue.beans));
+	return Unit();
+}
+```
+
+```output
+3 44
 ```
 
 `ArrayRef.fill(n, make)` makes its `n` elements by calling the lambda `make`
