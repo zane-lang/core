@@ -32,7 +32,8 @@ Zane has 4 bytes
 |---|---|
 | `a + b` | joins two strings; either may be a literal |
 | `a == b`, `a ~= b` | compares the bytes |
-| `String(v)` | the text of an `Int`, `Float`, `I32`, `F32` or `Bool` |
+| `String(v)` | the text of an `Int`, `Float`, `I32`, `F32`, `U8` or `Bool`; a `U8` is written as its number |
+| `n:hex()` | the digits of an `Int`, `I32` or `U8` in base 16, lowercase: no leading zeros and a `-` before a negative number, except that a `U8` always has two digits |
 | `s:byteCount()` | the length in bytes |
 | `s:byteAt(i)` | the byte at position `i`, from 1, as a `U8`; a position outside the string stops the program |
 | `s:parseInt()`, `s:parseFloat()` | the number written in the text, or an abort ([Numbers](numbers.md#reading-numbers-from-text)) |
@@ -58,7 +59,7 @@ Unit main() {
 	console Console(@program$console);
 	word String = String("héllo");
 	console!print(String(word:byteCount()));
-	console!print(String(Int(word:byteAt(Int(1)))));
+	console!print(String(word:byteAt(Int(1))) + " is " + word:byteAt(Int(2)):hex());
 
 	bytes List<U8> = List(U8);
 	i Int(1);
@@ -75,7 +76,7 @@ Unit main() {
 
 ```output
 6
-104
+104 is c3
 hllo
 ```
 

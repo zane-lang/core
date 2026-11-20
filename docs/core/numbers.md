@@ -85,7 +85,7 @@ Unit main() {
 	console!print(String(Int.truncate(f)) + " " + String(Int.truncate(~f)));
 	console!print(String(Float(Int(3)) / 2.0));
 	console!print(String(I32.wrap(Int(4294967298))));
-	console!print(String(Int(U8.wrap(Int(300)))));
+	console!print(String(U8.wrap(Int(300))));
 	return Unit();
 }
 ```
