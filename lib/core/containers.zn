@@ -74,8 +74,10 @@ Unit copyRange(this List<T Type>, at Int, from List<T>, start Int, count Int) mu
 	this._value!copyRange(at._value, from._value, start._value, count._value);
 	return Unit();
 }
-/// EXPERIMENT (LangArena zane-vs-goose): a list of `I32` indices into
-/// `keys` sorted stably by the key each names, ascending.
+/// A list of `I32` positions in the `Int` list `keys`, counted from 1,
+/// sorted in place by the key at each position, ascending. Positions with
+/// equal keys keep their order. A position outside `keys` stops the
+/// program.
 Unit sortBy(this List<T Type>, keys List<K Type>) mut {
 	this._value!sortBy(keys._value);
 	return Unit();

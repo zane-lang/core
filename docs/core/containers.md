@@ -60,13 +60,12 @@ Unit main() {
 | `l!appendOwn(start, count)` | copies `count` elements of the list itself, from `start`, onto the end |
 | `l!copyRange(at, from, start, count)` | copies `count` elements of `from`, from `start`, over the list's own elements, starting at `at` |
 | `l!sort()` | sorts the elements in place, ascending, for lists of `Int`, `I32` or `U8` |
+| `l!sortBy(keys)` | for a `List<I32>` of positions in the `List<Int>` `keys`, counted from 1: sorts the positions by the key at each, ascending, keeping positions with equal keys in order |
 | `l:sameRange(start, other, otherStart, count)` | whether two ranges hold the same elements, for lists of integers |
 | `l:hashRange(start, count)` | a hash of a range, for lists of integers |
 
 `appendRange`, `appendOwn` and `copyRange` are for elements that own no
-memory of their own, such as numbers. `l!sortBy(keys)` sorts a `List<I32>`
-of positions into `keys` by the key at each position. The source marks
-`sortBy` as an experiment, so it may change or go away.
+memory of their own, such as numbers.
 
 A `List` is a value, so copying a list copies its elements, and a value type
 may hold a `List` as a field.

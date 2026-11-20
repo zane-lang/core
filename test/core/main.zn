@@ -329,6 +329,7 @@ Unit?@primitives$String main() {
 	checks!check(I32.truncate(Float(2.75)) == 2 and I32.truncate(~Float(2.75)) == ~2);
 	checks!check(I32.truncate(Float(1000000000000.0)) == big);
 	checks!check(I32.truncate(F32.round(Float(3.9))) == 3);
+	checks!check(Int.truncate(F32.round(Float(3.9))) == 3 and Int.truncate(~F32.round(Float(3.9))) == ~3);
 	checks!check(String(I32(42)) == "42" and String(~I32(7)) == "-7");
 	checks!check(String(big) == "2147483647");
 
@@ -336,6 +337,8 @@ Unit?@primitives$String main() {
 	byte U8 = U8(200);
 	checks!check(Int(byte) == 200 and Int(U8(255)) + 1 == 256);
 	checks!check(U8.wrap(Int(256) + 7) == 7 and Int(U8.wrap(~Int(1))) == 255);
+	checks!check(I32(byte) == 200 and I32(U8(255)) + 1 == 256);
+	checks!check(U8.wrap(I32(263)) == 7 and Int(U8.wrap(~I32(1))) == 255);
 	checks!check(byte == 200 and U8(3) < U8(200) and ~(byte < U8(3)));
 	bytes List<U8> = List(U8);
 	b Int = Int(0);
@@ -391,8 +394,8 @@ Unit?@primitives$String main() {
 	checks!check(over[Int(6)] == 3 and over[Int(5)] == 50);
 	over!copyRange(1, tail, 1, 0);
 	checks!check(over[Int(1)] == 10 and over:size() == 6);
-	// sortBy: indices from 1 into the keys, sorted stably by the key each
-	// names: the two indices of key 5 keep their order.
+	// sortBy: positions from 1 in the keys, sorted by the key at each: the
+	// two positions of key 5 keep their order.
 	keys List<Int> = List(Int);
 	keys!push(Int(5));
 	keys!push(Int(2));

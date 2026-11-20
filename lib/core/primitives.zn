@@ -42,7 +42,9 @@ Int(v @primitives$I64) => init{
 }
 implicit Int(v @concepts$Int) => Int(@primitives$I64(v));
 implicit @primitives$I64(v Int) => v._value;
+/// `v` rounded toward zero, held to the range of an `Int`.
 Int.truncate(v Float) => Int(@primitives$I64.truncate(v._value));
+Int.truncate(v F32) => Int(@primitives$I64.truncate(v._value));
 
 Int ~(v Int) => Int(@operators$negate(v._value));
 Int +(left Int, right Int) => Int(@operators$add(left._value, right._value));
@@ -121,6 +123,8 @@ I32.truncate(v Float) => I32(@primitives$I32.truncate(v._value));
 I32.truncate(v @concepts$Float) => I32.truncate(Float(v));
 /// Exact: every `I32` is an `Int`.
 Int(v I32) => Int(@primitives$I64(v._value));
+/// Exact: every `U8` is an `I32` in 0..255.
+I32(v U8) => I32(@primitives$I32(v._value));
 
 I32 ~(v I32) => I32(@operators$negate(v._value));
 I32 +(left I32, right I32) => I32(@operators$add(left._value, right._value));
@@ -156,6 +160,7 @@ implicit U8(v @concepts$Int) => U8(@primitives$U8(v));
 implicit @primitives$U8(v U8) => v._value;
 /// The low 8 bits of `v`, read as an unsigned byte.
 U8.wrap(v Int) => U8(@primitives$U8.wrap(v._value));
+U8.wrap(v I32) => U8(@primitives$U8.wrap(v._value));
 /// Exact: every `U8` is an `Int` in 0..255.
 Int(v U8) => Int(@primitives$I64(v._value));
 Bool ==(left U8, right U8) => Bool(@operators$equal(left._value, right._value));
