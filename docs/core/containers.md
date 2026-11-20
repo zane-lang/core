@@ -185,6 +185,41 @@ Unit main() {
 1 20
 ```
 
+`ArrayRef.refs(values)` holds a reference to each element. Each element of
+the literal is a settled owner, from which the call takes a new reference, or
+an existing `&` value, which the call copies. The result is an
+`ArrayRef<&T, n>`. A read through it reaches the owner, and a `mut` method
+called through it changes the owner:
+
+```zane
+package hello;
+
+import core$;
+
+type Jar = #struct {
+	beans Int;
+}
+Jar(beans Int) => init{ beans; }
+Unit add(this Jar, count Int) mut {
+	this.beans = this.beans + count;
+	return Unit();
+}
+
+Unit main() {
+	console Console(@program$console);
+	red Jar(Int(3));
+	blue Jar(Int(4));
+	picks ArrayRef<&Jar, 2> = ArrayRef.refs([red, blue]);
+	picks[Int(2)]!add(Int(40));
+	console!print(String(picks[Int(1)].beans) + " " + String(blue.beans));
+	return Unit();
+}
+```
+
+```output
+3 44
+```
+
 ## Source
 
 [`lib/core/containers.zn`](https://github.com/zane-lang/std/blob/main/lib/core/containers.zn)
