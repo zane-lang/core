@@ -7,6 +7,9 @@ type Unit = struct {
 Unit() => init{
 	_value = @primitives$Unit();
 }
+/// What an intrinsic returns as `@primitives$Unit` reaches `Unit`, as a
+/// worker pool's publish function returns it (concurrency.md §6.2).
+implicit Unit(v @primitives$Unit) => Unit();
 
 
 // Bool

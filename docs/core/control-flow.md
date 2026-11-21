@@ -11,7 +11,8 @@ This page covers `core`'s branching, loops and workers, which are ordinary funct
 | `do() { … }` | runs the block once |
 | `i!to(end) { … }` | runs the block for each value of `i` up to `end`, advancing `i` |
 | `s!work(step)` | calls `step` on `s` until `step` returns `false` |
-| `s!setInterval(every, step)` | works like `work`, and waits the `Duration` `every` between steps |
+| `s!register(source, step)` | works like `work`, and calls `step` again only once the `EventSource` `source` is ready |
+| `s!setInterval(every, step)` | `register` on a timer: calls `step` each time the `Duration` `every` has passed since the timer was last ready |
 
 ```zane
 package hello;
@@ -61,8 +62,16 @@ countdown at 0
 ```
 
 A step is a lambda that takes the subject as `this` and is `mut`, so it can
-change the subject. `work` and `setInterval` take no block, so they may be
-started with `spawn` to run in the background.
+change the subject. `work`, `register` and `setInterval` take no block, so
+they may be started with `spawn` to run in the background.
+
+`register` waits for its event source between steps. The wait holds back
+only the caller of `register`: every other spawned call and every
+worker pool's worker keeps running meanwhile. `EventSource.every(interval)` makes a timer, which is
+ready each time `interval` has passed since it was last ready; a step
+slower than the interval runs again once, not once for each tick it
+missed. [Worker pools](workers.md) take the same event sources. To run many workers at once, each on an element of
+its own, use a [worker pool](workers.md).
 
 ## `Duration`
 

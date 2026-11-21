@@ -58,6 +58,7 @@ Unit main() {
 | [`containers.zn`](lib/core/containers.zn) | `Array` and `List` (values; `List(n, value)` makes `n` copies of `value` in one block), `ArrayRef` and `ListRef` (for owners that must stay in place) |
 | [`console.zn`](lib/core/console.zn) | `Console`, which prints |
 | [`runtime.zn`](lib/core/runtime.zn) | `Runtime`: the program's command-line `arguments` and its thread count |
+| [`workers.zn`](lib/core/workers.zn) | `WorkerPool`, which runs many workers at once with a shared state its funnel writes, and `EventSource`, a timer a worker waits on |
 | [`math.zn`](lib/math/math.zn) | `sqrt`, `pow`, `sin` and the other trigonometric functions, `floor`/`ceil`/`trunc`, `min`/`max`, bit operations on `Int` and `I32`; the float functions also over `F32` |
 | [`regex/`](lib/regex/) | `compile`, which makes a `Regex`, and its `find`, `findAll`, `count`, `isMatch` and `captures`; `Match` and `Captures` |
 

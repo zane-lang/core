@@ -6,7 +6,7 @@ The language itself provides only machine-level building blocks, the
 compiler's intrinsics. `Int`, `String`, `List`, `if`, loops and printing are
 declared in `std`, in ordinary Zane source you can read.
 
-1. [core](core/README.md): numbers, text, containers, control flow, the console
+1. [core](core/README.md): numbers, text, containers, control flow, the console, worker pools
 2. [math](math.md): square roots, powers, trigonometry, rounding, bit operations
 3. [regex](regex.md): regular expressions with groups, searched in linear time
 
@@ -41,7 +41,7 @@ Unit main() {
 sqrt(2) is more than 1.4
 ```
 
-These pages describe `std` v0.15, which pins compiler v0.39; their examples
-are checked with compiler v0.40, which builds it too. To learn the
-language itself, start with the
+These pages describe `std` on compiler v0.43, the version it pins, and every
+example on them prints the output shown when built with that compiler. To
+learn the language itself, start with the
 [Learn pages](https://github.com/zane-lang/docs/blob/main/docs/README.md).

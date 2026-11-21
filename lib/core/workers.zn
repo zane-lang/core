@@ -1,0 +1,83 @@
+package core;
+
+// EventSource
+/// A source a worker waits on between steps, in a worker pool
+/// (concurrency.md §6.3) or in `register`: a timer, ready each time its
+/// interval has passed since it was last ready, and always ready when the
+/// interval is below one nanosecond.
+type EventSource = struct {
+	_value @primitives$EventSource;
+}
+EventSource.every(interval Duration) => init{
+	_value = @primitives$EventSource.every(interval._nanoseconds._value);
+}
+
+
+// WorkerPool
+/// A worker pool (concurrency.md §6): many workers that run the same step,
+/// each on an element of its own, which the pool owns. The workers share a
+/// state of type `S`, which only the funnel writes, applying the events of
+/// type `E` the steps publish. The scope that holds a pool ends only once
+/// every element's step has returned `false` and the funnel has applied
+/// every event.
+type WorkerPool<T Type, S Type, E Type> = #struct {
+	_value @primitives$WorkerPool<T, S, E>;
+}
+/// A pool whose workers share `state`, which `funnel` writes: it is called
+/// with the state as `this` and each event published, one at a time.
+WorkerPool<T, S, E>(T Type, state S Type, funnel Unit[this S, E Type] mut) => init{
+	_value = @primitives$WorkerPool(T, state, funnel);
+}
+/// A pool whose workers share nothing.
+WorkerPool<T, Unit, Unit>(T Type) => init{
+	_value = @primitives$WorkerPool(T, Unit(), Unit(this Unit, event Unit) mut => Unit());
+}
+
+/// Adds a worker: the element moves into the pool, or is copied in when it
+/// is a value, and its step runs beside the caller and the other workers,
+/// again each time it returns `true`, until it returns `false`, when the
+/// element is destroyed. A step gets the element as `this`, a snapshot of
+/// the state taken when the call begins, and a function that publishes an
+/// event to the funnel. `start` returns at once.
+Unit start(this WorkerPool<T Type, S Type, E Type>, element ^T, step Bool[this T, S, Unit[E]] mut) mut {
+	this._value!start(element, step);
+	return Unit();
+}
+/// Adds a worker that runs its step again only when one of `sources` is
+/// ready or the funnel has changed the state, and between calls waits
+/// without holding a thread. Its first call comes right after `start`.
+Unit start(this WorkerPool<T Type, S Type, E Type>, element ^T, sources List<EventSource>, step Bool[this T, S, Unit[E]] mut) mut {
+	this._value!start(element, sources:_intervals(), step);
+	return Unit();
+}
+/// Adds a worker to a pool whose workers share nothing: its step gets only
+/// the element.
+Unit start(this WorkerPool<T Type, Unit, Unit>, element ^T, step Bool[this T] mut) mut {
+	this._value!start(element, step);
+	return Unit();
+}
+Unit start(this WorkerPool<T Type, Unit, Unit>, element ^T, sources List<EventSource>, step Bool[this T] mut) mut {
+	this._value!start(element, sources:_intervals(), step);
+	return Unit();
+}
+
+/// A snapshot of the shared state.
+S state(this WorkerPool<T Type, S Type, E Type>) => this._value:state();
+
+/// A list of a snapshot of each element, in the order they started. Each
+/// element is whole, taken between two calls of its step. Only for a pool
+/// of value-typed elements, since a pool alone owns an element of a
+/// reference type.
+List<T> elements(this WorkerPool<T Type, S Type, E Type>) => List._made(this._value:elements());
+
+/// A `List` over the elements `values` already holds.
+List<T>._made(values @primitives$List<T Type>) => init{ _value = values; }
+
+@primitives$List<@primitives$EventSource> _intervals(this List<EventSource>) {
+	out @primitives$List<@primitives$EventSource> = @primitives$List(@primitives$EventSource);
+	i Int = Int(1);
+	i!to(this:size()) {
+		out!push(this[i]._value);
+	}
+	return out;
+}

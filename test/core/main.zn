@@ -95,6 +95,95 @@ type Steps = struct {
 }
 Steps(limit Int) => init{ taken = Int(0); limit; }
 
+/// A worker pool's worker, which publishes its id and 1 up to its limit,
+/// and the state its funnel keeps: the sum, the number of events, each
+/// worker's last number, and whether any arrived out of order.
+type Sender = struct {
+	id Int;
+	sent Int;
+	limit Int;
+}
+Sender(id Int, limit Int) => init{ id; sent = Int(0); limit; }
+
+type Sent = struct {
+	id Int;
+	n Int;
+}
+Sent(id Int, n Int) => init{ id; n; }
+
+type Tally = struct {
+	sum Int;
+	events Int;
+	last List<Int>;
+	disordered Bool;
+}
+Tally(workers Int) => init{
+	sum = Int(0);
+	events = Int(0);
+	last = List(workers + 1, Int(0));
+	disordered = Bool(false);
+}
+
+Unit add(this Tally, event Sent) mut {
+	this.sum = this.sum + event.n;
+	this.events = this.events + 1;
+	if(~(event.n == this.last[event.id] + 1)) {
+		this.disordered = Bool(true);
+	}
+	this.last[event.id] = event.n;
+	return Unit();
+}
+
+/// The pool's state once `events` events are applied, read while the
+/// workers run.
+Tally applied(pool WorkerPool<Sender, Tally, Sent>, events Int) {
+	i Int = Int(1);
+	i!to(Int(1000000000)) {
+		now Tally = pool:state();
+		if(now.events == events) {
+			return now;
+		}
+	}
+	return pool:state();
+}
+
+/// A package constant, which the elements of a pool read through an `&`.
+type Threes = #struct {
+	values List<Int>;
+}
+Threes() => init{ values = List(Int(10), Int(3)); }
+
+threes Threes = Threes();
+
+/// A worker that publishes each of its table's values in turn.
+type Summer = #struct {
+	table &Threes;
+	at Int;
+}
+Summer(table &Threes) => init{ table; at = Int(0); }
+
+/// Starts a summer on `table`: its callers pass a package constant.
+Unit summing(this WorkerPool<Summer, Int, Int>, table &Threes) mut {
+	this!start(Summer(table), Bool(this Summer, total Int, publish Unit[Int]) mut {
+		this.at = this.at + 1;
+		publish(this.table.values[this.at]);
+		return this.at < this.table.values:size();
+	});
+	return Unit();
+}
+
+/// The pool's state once it reaches `total`, read while the workers run.
+Int summed(pool WorkerPool<Summer, Int, Int>, total Int) {
+	i Int = Int(1);
+	i!to(Int(1000000000)) {
+		now Int = pool:state();
+		if(now == total) {
+			return now;
+		}
+	}
+	return pool:state();
+}
+
 Unit printUnlessStopped(this Checks, stop Bool) mut {
 	do() {
 		guard(stop);
@@ -515,21 +604,92 @@ Unit?@primitives$String main() {
 		return this.taken < this.limit;
 	});
 	checks!check(ticks.taken == 3);
+	ticked Steps(4);
+	ticked!register(EventSource.every(Duration.milliseconds(1)), Bool(this Steps) mut {
+		this.taken = this.taken + 1;
+		return this.taken < this.limit;
+	});
+	checks!check(ticked.taken == 4);
 	checks!check(Duration.seconds(2):nanoseconds() == 2000000000);
 	checks!check(Duration.milliseconds(16):nanoseconds() == 16000000);
 	checks!check(Duration.nanoseconds(7):nanoseconds() == 7);
+	// A spawned `register` waits for its timer beside a spawned `work`.
 	spawnedTaken Int = Int(0);
+	timedTaken Int = Int(0);
 	do() {
 		spawned Steps(4);
+		timed Steps(3);
 		do() {
+			spawn timed!register(EventSource.every(Duration.milliseconds(1)), Bool(this Steps) mut {
+				this.taken = this.taken + 1;
+				return this.taken < this.limit;
+			});
 			spawn spawned!work(Bool(this Steps) mut {
 				this.taken = this.taken + 1;
 				return this.taken < this.limit;
 			});
 		}
 		spawnedTaken = spawned.taken;
+		timedTaken = timed.taken;
 	}
-	checks!check(spawnedTaken == 4);
+	checks!check(spawnedTaken == 4 and timedTaken == 3);
+
+	// Worker pools: ten senders publish 55 events to a funnel, which sums
+	// them into the state in order; a pool without state whose elements
+	// are read while they run; elements that read a package constant; and
+	// workers on timers.
+	do() {
+		pool WorkerPool<Sender, Tally, Sent> = WorkerPool(Sender, Tally(Int(10)), Unit(this Tally, event Sent) mut {
+			this!add(event);
+			return Unit();
+		});
+		id Int = Int(1);
+		id!to(Int(10)) {
+			pool!start(Sender(id, id), Bool(this Sender, shared Tally, publish Unit[Sent]) mut {
+				this.sent = this.sent + 1;
+				publish(Sent(this.id, this.sent));
+				return this.sent < this.limit;
+			});
+		}
+		done Tally = applied(pool, Int(55));
+		checks!check(done.events == 55 and done.sum == 220 and ~done.disordered);
+	}
+	do() {
+		counters WorkerPool<Steps, Unit, Unit> = WorkerPool(Steps);
+		started Int = Int(1);
+		started!to(Int(3)) {
+			counters!start(Steps(100000), Bool(this Steps) mut {
+				this.taken = this.taken + 1;
+				return this.taken < this.limit;
+			});
+		}
+		seen List<Steps> = counters:elements();
+		whole Bool = seen:size() <= 3;
+		read Int = Int(1);
+		read!to(seen:size()) {
+			whole = whole and seen[read].taken <= seen[read].limit;
+		}
+		checks!check(whole);
+	}
+	do() {
+		sums WorkerPool<Summer, Int, Int> = WorkerPool(Summer, Int(0), Unit(this Int, n Int) mut {
+			this = this + n;
+			return Unit();
+		});
+		sums!summing(threes);
+		sums!summing(threes);
+		checks!check(summed(sums, Int(60)) == 60);
+	}
+	do() {
+		timed WorkerPool<Steps, Unit, Unit> = WorkerPool(Steps);
+		every List<EventSource> = List(EventSource);
+		every!push(EventSource.every(Duration.milliseconds(1)));
+		timed!start(Steps(5), every, Bool(this Steps) mut {
+			this.taken = this.taken + 1;
+			return this.taken < this.limit;
+		});
+	}
+	checks!check(Bool(true));
 
 	checks:finish() ? report {
 		abort report;
