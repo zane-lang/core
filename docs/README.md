@@ -43,6 +43,5 @@ sqrt(2) is more than 1.4
 
 These pages describe `std` on compiler v0.43, the version it pins, and every
 example on them prints the output shown when built with that compiler. To
-learn the
-language itself, start with the
+learn the language itself, start with the
 [Learn pages](https://github.com/zane-lang/docs/blob/main/docs/README.md).
